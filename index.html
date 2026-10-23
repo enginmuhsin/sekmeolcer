@@ -1,0 +1,938 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#e5622b">
+<meta name="description" content="Topun çarpma seslerinden sekme katsayısını ölçen saha aracı">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="ikon-192.png">
+<link rel="apple-touch-icon" href="ikon-192.png">
+</head>
+<body>
+<title>SekmeÖlçer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Düzen: tek sütun saha aleti — top/zemin, ses, bırakışlar, karşılaştırma, veri, video */
+:root{
+  --bg:#f1f4f2; --panel:#ffffff; --ink:#17231e; --muted:#5b6b64; --line:#d3ddd8;
+  --accent:#e5622b; --accent-ink:#ffffff; --ok:#1d7f5a; --warn:#b5740d; --wave:#2f3d36; --mark:#e5622b; --mark2:#1d7f5a; --soft:#fbe7dc;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111815; --panel:#18221e; --ink:#e6eee9; --muted:#9aaba3; --line:#2c3a34;
+  --accent:#f07a45; --accent-ink:#1a0f09; --ok:#4fc28f; --warn:#e3a845; --wave:#b9c9c1; --mark:#f07a45; --mark2:#4fc28f; --soft:#3a2418; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111815; --panel:#18221e; --ink:#e6eee9; --muted:#9aaba3; --line:#2c3a34;
+  --accent:#f07a45; --accent-ink:#1a0f09; --ok:#4fc28f; --warn:#e3a845; --wave:#b9c9c1; --mark:#f07a45; --mark2:#4fc28f; --soft:#3a2418; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;margin:0}
+.wrap{max-width:820px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,7vw,40px);line-height:1;margin:0;letter-spacing:-.02em}
+h1 span{color:var(--accent)}
+.sub{color:var(--muted);margin:4px 0 0;max-width:56ch}
+.tag{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+.ortam{font-size:14px;border-radius:10px;padding:10px 12px;background:var(--soft);color:var(--ink);margin:0}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px;min-width:0}
+h2{font-family:var(--display);font-weight:600;font-size:18px;margin:0}
+h3{font-size:13px;margin:4px 0 0;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+label{display:grid;gap:4px;font-size:13px;color:var(--muted);letter-spacing:.02em}
+label.check{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--ink);letter-spacing:0;cursor:pointer}
+label.check input{width:20px;height:20px;padding:0;accent-color:var(--accent)}
+input,select{font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+button,.filebtn{font:inherit;font-weight:700;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:10px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;position:relative}
+button.primary,.filebtn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.kucuk{padding:4px 10px;font-size:13px}
+button:focus-visible,.filebtn:focus-within,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+.filebtn input{position:absolute;opacity:0;width:1px;height:1px}
+.status{font-size:14px;color:var(--muted);min-height:1.5em;margin:0}
+.status.err{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:8px;padding:8px 10px}
+.kayitbtn{font-size:18px;padding:14px 20px}
+.rec{width:12px;height:12px;border-radius:50%;background:currentColor}
+.recording .rec{animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.recording .rec{animation:none}}
+.seviye{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:14px;color:var(--muted)}
+.seviye .bar{height:12px;border-radius:6px;background:var(--bg);border:1px solid var(--line);overflow:hidden}
+.seviye .bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .08s linear}
+.seviye .bar i.yuksek{background:var(--accent)}
+.sayac{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.canvasbox{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+canvas{display:block;width:100%;height:170px}
+.slider{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:14px;color:var(--muted)}
+.slider input{padding:0}
+.big{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-family:var(--mono);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat small{color:var(--muted)}
+.tablebox{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+td.num{font-family:var(--mono)}
+.pill{font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;border:1px solid currentColor;white-space:nowrap}
+.pill.ok{color:var(--ok)} .pill.warn{color:var(--warn)} .pill.bad{color:var(--accent)}
+.note{font-size:13px;color:var(--muted);margin:0}
+.yogunluk{font-size:14px;margin:0}
+.topsec{display:grid;gap:8px}
+.topform{display:grid;gap:10px;border:1px dashed var(--line);border-radius:10px;padding:12px;background:var(--bg)}
+.topform input,.topform select{background:var(--panel)}
+.grafik{overflow-x:auto}
+.grafik svg{display:block;width:100%;max-width:640px;height:auto}
+.grafik text{font-family:var(--body);font-size:13px;fill:var(--ink)}
+.grafik .eksen{stroke:var(--line)}
+.grafik .ekseny{font-family:var(--mono);font-size:12px;fill:var(--muted)}
+.grafik .nokta{fill:var(--accent);fill-opacity:.55}
+.grafik .ortcizgi{stroke:var(--ink);stroke-width:2.5}
+.vsahne{position:relative;border:1px solid var(--line);border-radius:10px;background:#000;overflow:hidden}
+.vtuval{display:block;max-width:100%;max-height:70vh;width:auto;height:auto;margin:0 auto;cursor:crosshair;touch-action:manipulation}
+#vid{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:0;top:0}
+.modlar{display:flex;flex-wrap:wrap;gap:8px}
+.modlar button{font-size:14px;padding:8px 10px}
+.modlar button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.modlar button .ok{color:var(--ok);font-weight:700}
+pre{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;margin:0;max-height:160px}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Sekme<span>Ölçer</span></h1>
+      <p class="sub">Topun çarpma seslerinden sekme katsayısını (e = t₂ / t₁) hesaplar. Tek kayıtta arka arkaya birden çok bırakış yapabilirsiniz; uygulama her bırakışı ayrı bulur.</p>
+    </div>
+    <span class="tag">v1.2</span>
+  </header>
+  <p class="ortam" id="ortam" hidden></p>
+
+  <section aria-labelledby="h-olcum">
+    <h2 id="h-olcum">1 · Top ve zemin</h2>
+    <div class="topsec">
+      <label for="f-tophazir">Top<select id="f-tophazir"></select></label>
+      <div class="row">
+        <button id="b-topekle">+ Top ekle</button>
+        <button id="b-topduzenle">Düzenle</button>
+        <button id="b-topsil">Sil</button>
+        <button id="b-topsil-onay" hidden>Evet, bu topu sil</button>
+      </div>
+    </div>
+    <p class="yogunluk" id="topozet"></p>
+    <div class="topform" id="topform" hidden>
+      <h3 id="topform-baslik">Yeni top</h3>
+      <div class="fields">
+        <label for="f-top">Top adı<input id="f-top" placeholder="ör. Lakros topu"></label>
+        <label for="f-tur">Türü<select id="f-tur"><option value="">Seçin…</option><option>Dolu kauçuk</option><option>Yoğun köpük</option><option>Yumuşak köpük</option><option>Şişirilmiş</option><option>İçi boş plastik</option><option>Diğer</option></select></label>
+      </div>
+      <div class="fields">
+        <label for="f-kutle">Kütle (g)<input id="f-kutle" type="number" step="1" inputmode="decimal"></label>
+        <label for="f-cevre">Çevre (cm)<input id="f-cevre" type="number" step="0.1" inputmode="decimal"></label>
+        <label for="f-cap">Çap (cm)<input id="f-cap" type="number" step="0.01" inputmode="decimal"></label>
+      </div>
+      <p class="yogunluk" id="yogunluk"></p>
+      <p class="note">Çevreyi ya da çapı girin; öteki kendiliğinden hesaplanır. Çapı en doğru, topu iki kitap arasına koyup cetvelle ölçerek bulursunuz.</p>
+      <div class="row"><button id="b-topkaydet" class="primary">Topu kaydet</button><button id="b-topvazgec">Vazgeç</button></div>
+    </div>
+    <div class="fields">
+      <label for="f-yer">Yer / park<input id="f-yer" value="Ev" placeholder="ör. Çınar Parkı"></label>
+      <label for="f-zemin">Zemin<input id="f-zemin" value="Parke"></label>
+      <label for="f-nokta">Nokta (zemindeki ölçüm yeri)<input id="f-nokta" value="N1" placeholder="ör. N1 salıncak altı"></label>
+    </div>
+    <div class="fields">
+      <label for="f-sicaklik">Sıcaklık (°C)<input id="f-sicaklik" type="number" step="0.5" inputmode="decimal" value="21"></label>
+      <label for="f-yukseklik">Bırakma yüksekliği (m)<input id="f-yukseklik" type="number" step="0.01" inputmode="decimal" value="1.00"></label>
+    </div>
+    <label class="check" for="f-ref"><input id="f-ref" type="checkbox"> Bu zemin sert referanstır (beton ya da seramik)</label>
+    <div class="row"><button id="b-konum">Konumu ekle</button><span class="note" id="konum-yazi">Konum eklenmedi.</span></div>
+    <p class="note">Bırakma yüksekliği topun alt yüzeyinden ölçülür. Bu bölümdeki bilgiler bir sonraki açılışta hatırlanır.</p>
+  </section>
+
+  <section aria-labelledby="h-ses">
+    <h2 id="h-ses">2 · Sesi al</h2>
+    <div class="row">
+      <button id="b-kayit" class="primary kayitbtn"><span class="rec"></span><span id="b-kayit-yazi">Kaydı başlat</span></button>
+      <span class="sayac" id="sayac" hidden>00:00</span>
+    </div>
+    <div class="seviye" id="seviye-kutu" hidden><span>Ses</span><div class="bar"><i id="seviye"></i></div><span id="seviye-yazi"></span></div>
+    <div class="row">
+      <label class="filebtn" for="f-dosya">Ses dosyası yükle<input id="f-dosya" type="file" accept="audio/*,.m4a,.wav,.mp3,.aac,.ogg,.webm"></label>
+      <button id="b-ornek">Örnek kaydı dene</button>
+      <button id="b-hamindir" disabled>Ham kaydı indir</button>
+    </div>
+    <p class="status" id="durum" role="status"></p>
+    <div class="canvasbox"><canvas id="dalga" width="1600" height="340" aria-label="Ses dalga formu; her bırakışın tıkları farklı renkte"></canvas></div>
+    <div class="slider">
+      <span>Eşik</span><input id="f-esik" type="range" min="3" max="60" step="1" value="10" aria-label="Tık algılama eşiği, ortam gürültüsünün katı"><span id="esik-deger" class="num">×10</span>
+    </div>
+    <p class="note">Telefonu düşme noktasından 30–60 cm uzağa, sabit bir yere koyun. Bir bırakış bitince topu 5–6 sekmede yakalayın ve en az 2 saniye bekleyip yeniden bırakın. Eşik, bir sesin ortam gürültüsünün kaç katı olunca tık sayılacağını belirler: tık kaçıyorsa sola, fazla tık bulunuyorsa sağa çekin.</p>
+  </section>
+
+  <section aria-labelledby="h-kayit">
+    <h2 id="h-kayit">3 · Bu kayıttaki bırakışlar</h2>
+    <div class="big">
+      <div class="stat"><small>Geçerli bırakış</small><b id="k-n">—</b></div>
+      <div class="stat"><small>Ortalama e</small><b id="k-ort">—</b></div>
+      <div class="stat"><small>Standart sapma</small><b id="k-ss">—</b></div>
+    </div>
+    <div class="tablebox"><table>
+      <thead><tr><th>Bırakış</th><th>Tık</th><th>t₁ (s)</th><th>t₂ (s)</th><th>e = t₂/t₁</th><th>t₃/t₂</th><th>e (yükseklik)</th><th>Durum</th></tr></thead>
+      <tbody id="t-birakis"><tr><td colspan="8" class="note">Henüz kayıt yok.</td></tr></tbody>
+    </table></div>
+    <p class="note">e = t₂/t₁ her ölçümde aynı sekmeden okunur; böylece her zemin aynı çarpma hızında karşılaştırılır. Yalnızca ilk üç tık kullanılır; sonraki sekmeler (özellikle yumuşak zeminde) düzensiz olabilir ve hesaba girmez. t₃/t₂ bilgi içindir. Aynı kayıttaki diğer bırakışlardan açıkça sapan bırakış (t₁ %10'dan, e 0,05'ten fazla) şüpheli sayılır ve kaydedilmez. e (yükseklik) = √(1. sekme yüksekliği ÷ bırakma yüksekliği).</p>
+    <div class="row"><button id="b-ekle" class="primary" disabled>Geçerli bırakışları kaydet</button></div>
+  </section>
+
+  <section aria-labelledby="h-karsi">
+    <h2 id="h-karsi">4 · Top × zemin karşılaştırması</h2>
+    <div class="tablebox"><table>
+      <thead><tr><th>Top</th><th>Zemin</th><th>n</th><th>°C</th><th>Ortalama e</th><th>SS</th><th>Bağıl sekme</th><th>ZYO</th></tr></thead>
+      <tbody id="t-grup"><tr><td colspan="8" class="note">Kaydedilen bırakış yok.</td></tr></tbody>
+    </table></div>
+    <p class="note">Bağıl sekme = (e ÷ e<sub>referans</sub>)²: aynı topun bu zemindeki sekme yüksekliğinin referans zemindekine oranı. ZYO (Zemin Yutma Oranı) = 100 − bağıl sekme: zeminin referansa göre fazladan yuttuğu enerji payı. ± değeri, ölçümlerin dağılımından gelen belirsizliktir.</p>
+    <h3>Her bırakış tek tek</h3>
+    <div class="grafik" id="grafik"><p class="note">Kayıt olunca burada her bırakış bir nokta, ortalama bir çizgi olarak görünür.</p></div>
+    <h3>Hangi top zeminleri en iyi ayırıyor?</h3>
+    <div class="tablebox"><table>
+      <thead><tr><th>Top</th><th>Zemin sayısı</th><th>En büyük e farkı</th><th>Ayırt etme gücü</th><th></th></tr></thead>
+      <tbody id="t-ayirt"><tr><td colspan="5" class="note">Aynı topla en az iki zeminde ölçüm yapın.</td></tr></tbody>
+    </table></div>
+    <p class="note">Ayırt etme gücü = zeminler arasındaki e farkı ÷ ölçümlerin kendi dağılımı (SS). 3'ün üstü: top zeminleri net ayırıyor. 1'in altı: fark ölçüm gürültüsünün içinde kalıyor.</p>
+    <h3>Kayıtlar</h3>
+    <div class="tablebox"><table>
+      <thead><tr><th>#</th><th>Top</th><th>Yer · zemin</th><th>Nokta</th><th>n</th><th>Ortalama e</th><th></th></tr></thead>
+      <tbody id="t-kayitlar"><tr><td colspan="7" class="note">Kayıt yok.</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="h-veri">
+    <h2 id="h-veri">5 · Veriyi dışarı al</h2>
+    <div class="row">
+      <button id="b-indir" class="primary">CSV indir</button>
+      <button id="b-paylas" hidden>Paylaş</button>
+      <button id="b-kopyala">Kopyala</button>
+    </div>
+    <div class="row">
+      <button id="b-yedek">Yedek al</button>
+      <label class="filebtn" for="f-yedek">Yedekten geri yükle<input id="f-yedek" type="file" accept=".json,application/json"></label>
+      <button id="b-temizle">Hepsini sil</button>
+      <button id="b-temizle-onay" hidden>Evet, hepsini sil</button>
+    </div>
+    <p class="status" id="vdurum2" role="status"></p>
+    <pre id="csv" hidden></pre>
+    <p class="note">Kayıtlar yalnızca bu cihazda, bu tarayıcıda saklanır. Tarayıcı verilerini temizlemek kayıtları da siler; her ölçüm gününün sonunda "Yedek al" ile bir yedek dosyası saklayın. CSV dosyası Excel ve Google E-Tablolar'da açılır.</p>
+  </section>
+
+  <section aria-labelledby="h-video">
+    <h2 id="h-video">6 · Video doğrulama</h2>
+    <p class="note">Telefon tripodda, düşme noktasından 2–3 m uzakta ve zemine dik dursun. Metre topla aynı hizada, dikey olarak dursun. Ağır çekimle çekin. Aynı bırakışı sesle de kaydederseniz iki yöntemi karşılaştırabilirsiniz.</p>
+    <div class="row">
+      <label class="filebtn" for="f-video">Video yükle<input id="f-video" type="file" accept="video/*"></label>
+    </div>
+    <p class="status" id="vdurum" role="status">Henüz video yok.</p>
+    <div class="vsahne" id="vsahne" hidden>
+      <video id="vid" playsinline muted preload="auto"></video>
+      <canvas id="vtuval" class="vtuval" aria-label="Video karesi ve ölçüm çizgileri; işaretlemek için dokunun"></canvas>
+    </div>
+    <div id="vkontroller" hidden style="display:grid;gap:12px">
+      <div class="slider"><span id="vzaman">0,000 s</span><input id="f-vkaydir" type="range" min="0" max="1" step="0.001" value="0" aria-label="Videoda zaman"><span></span></div>
+      <div class="row">
+        <button data-adim="-10">−10 kare</button><button data-adim="-1">−1 kare</button><button data-adim="1">+1 kare</button><button data-adim="10">+10 kare</button>
+      </div>
+      <div class="fields">
+        <label for="f-fps">Kare hızı (fps)<input id="f-fps" type="number" step="1" value="240"></label>
+        <label for="f-olcek">Metredeki iki işaret arası (cm)<input id="f-olcek" type="number" step="1" value="100"></label>
+        <label for="f-vses">Aynı bırakışın ses sonucu<select id="f-vses"><option value="">—</option></select></label>
+      </div>
+      <div>
+        <p class="note" style="margin-bottom:6px">Sırayla işaretleyin. Bir düğmeyi seçip videoya dokunarak tek bir noktayı da düzeltebilirsiniz.</p>
+        <div class="modlar" role="group" aria-label="İşaretlenecek nokta">
+          <button data-mod="olcek1">1 · Metre: alt işaret</button>
+          <button data-mod="olcek2">2 · Metre: üst işaret</button>
+          <button data-mod="zemin">3 · Zemin seviyesi</button>
+          <button data-mod="birak">4 · Bırakma anı</button>
+          <button data-mod="tepe">5 · 1. sekmenin tepesi</button>
+        </div>
+      </div>
+      <div class="big">
+        <div class="stat"><small>Bırakma yüksekliği</small><b id="v-hb">—</b></div>
+        <div class="stat"><small>1. sekme yüksekliği</small><b id="v-ht">—</b></div>
+        <div class="stat"><small>e (video)</small><b id="v-e">—</b></div>
+        <div class="stat"><small>e (ses) · fark</small><b id="v-fark">—</b></div>
+      </div>
+      <div class="row"><button id="b-vkaydet" disabled>Doğrulamayı kaydet</button><button id="b-vsifirla">İşaretleri temizle</button></div>
+    </div>
+    <div class="tablebox"><table>
+      <thead><tr><th>Top</th><th>Zemin</th><th>h bırakma (m)</th><th>h sekme (m)</th><th>e (video)</th><th>e (ses)</th><th>Fark</th></tr></thead>
+      <tbody id="t-video"><tr><td colspan="7" class="note">Kaydedilmiş doğrulama yok.</td></tr></tbody>
+    </table></div>
+    <p class="note">İki yöntem arasındaki fark 0,01–0,02 civarındaysa ses yöntemine güvenebiliriz. Daha büyük farklarda metrenin topla aynı hizada olup olmadığını ve tepe karesinin doğru seçilip seçilmediğini kontrol edin.</p>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+const g = 9.81, AYRIM_SN = 1.5, SURUM = "1.2";
+const $ = id => document.getElementById(id);
+const fmt = (x, d=3) => Number.isFinite(x) ? x.toFixed(d).replace(".", ",") : "—";
+const ort = a => a.length ? a.reduce((s,x)=>s+x,0)/a.length : NaN;
+const ss = a => { if (a.length < 2) return NaN; const m = ort(a); return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1)); };
+const sayi = id => { const v = parseFloat(String($(id).value).replace(",", ".")); return Number.isFinite(v) ? v : NaN; };
+const dene = f => { try { return f(); } catch (_) { return undefined; } };
+const CLAUDE_ICINDE = (() => { try { return window.self !== window.top; } catch (_) { return true; } })();
+
+/* ---------- ANALİZ ---------- */
+// Tık = sesin ani yükselişi. Ses önce yüksek geçiren bir filtreden geçer (uğultu, yuvarlanma azalır),
+// 2 ms'lik pencerede şiddeti (zarf) hesaplanır. Zarf ortam gürültüsünün K katını geçerse VE 5 ms öncesine göre
+// en az R kat artmışsa tık sayılır. Böylece kısık tıklar da bulunur, çınlama ise yeni tık sayılmaz.
+function tiklariBul(samples, rate, K = 10, R = 4, minAra = 0.05) {
+  const n = samples.length; if (n < 10) return [];
+  const win = Math.max(1, Math.round(0.002 * rate)), d = Math.max(1, Math.round(0.005 * rate)), yarim = win >> 1;
+  const c = new Float64Array(n + 1);
+  for (let i = 0; i < n; i++) { const h = i ? samples[i] - samples[i-1] : 0; c[i+1] = c[i] + h * h; }
+  const env = new Float32Array(n); let tepe = 0;
+  for (let i = 0; i < n; i++) { const a = Math.max(0, i - yarim), b = Math.min(n, a + win); env[i] = Math.sqrt((c[b] - c[a]) / (b - a)); if (env[i] > tepe) tepe = env[i]; }
+  if (tepe === 0) return [];
+  const ornek = []; for (let i = 0; i < n; i += 10) ornek.push(env[i]); ornek.sort((p, q) => p - q);
+  const gurultu = Math.max(ornek[ornek.length >> 1], tepe * 1e-4);
+  const esik = K * gurultu, bosluk = Math.round(minAra * rate), tiklar = [];
+  let son = -Infinity;
+  for (let i = d; i < n; i++) if (env[i] >= esik && env[i] >= R * env[i-d] && i - son >= bosluk) { tiklar.push(i / rate); son = i; }
+  return tiklar;
+}
+// Tıkları bırakışlara ayır: yalnızca uzun sessizlik (topu yakalayıp beklemek) yeni bırakıştır.
+// Bir bırakışın içinde aralık bir öncekinden belirgin uzarsa (top kaydı, yuvarlandı, yakalandı) kuyruk orada kesilir.
+function birakislaraAyir(tiklar, ayrim = AYRIM_SN) {
+  const gruplar = [];
+  for (const t of tiklar) {
+    const son = gruplar[gruplar.length - 1];
+    if (!son || t - son[son.length - 1] > ayrim) gruplar.push([t]); else son.push(t);
+  }
+  return gruplar.map(s => {
+    let k = s.length;
+    for (let i = 2; i < s.length; i++) if (s[i] - s[i-1] > 1.15 * (s[i-1] - s[i-2])) { k = i; break; }
+    return s.slice(0, k);
+  }).filter(s => s.length >= 2);
+}
+function birakisHesapla(tiklar, H0) {
+  const ara = []; for (let i = 1; i < tiklar.length; i++) ara.push(tiklar[i] - tiklar[i-1]);
+  const e = ara.length >= 2 ? ara[1] / ara[0] : NaN;      // hep aynı sekme: aynı çarpma hızı
+  const e2 = ara.length >= 3 ? ara[2] / ara[1] : NaN;     // bilgi amaçlı
+  const h1 = ara.length ? g * ara[0] ** 2 / 8 : NaN;
+  const eH = Number.isFinite(H0) && H0 > 0 ? Math.sqrt(h1 / H0) : NaN;
+  return { tik: tiklar.length, t1: ara[0], t2: ara[1], t3: ara[2], e, e2, eH, durum: "ok" };
+}
+// Kayıt içi tutarlılık: aynı kayıttaki bırakışlar aynı top, zemin ve yükseklikten gelir.
+// Ortancadan açıkça sapan bırakış (araya ek ses girmiş, tık kaçmış) şüpheli sayılır.
+const ortanca = a => { const s = [...a].sort((p, q) => p - q), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2; };
+function durumlariBelirle(liste) {
+  const aday = liste.filter(b => b.tik >= 3 && b.e > 0.2 && b.e < 0.99);
+  const mt1 = aday.length ? ortanca(aday.map(b => b.t1)) : NaN, me = aday.length ? ortanca(aday.map(b => b.e)) : NaN;
+  for (const b of liste) {
+    if (b.tik < 3) b.durum = "az";
+    else if (!(b.e > 0.2 && b.e < 0.99)) b.durum = "e";
+    else if (aday.length >= 3 && Math.abs(b.t1 - mt1) > 0.10 * mt1) b.durum = "t1";
+    else if (aday.length >= 3 && Math.abs(b.e - me) > 0.05) b.durum = "e";
+    else b.durum = "ok";
+  }
+  return liste;
+}
+
+/* ---------- ÇİZİM ---------- */
+function ciz(samples, rate, gruplar) {
+  const cv = $("dalga"), cx = cv.getContext("2d"), W = cv.width, H = cv.height, css = getComputedStyle(document.documentElement);
+  cx.clearRect(0,0,W,H); if (!samples) return;
+  let tepe = 0; for (let i = 0; i < samples.length; i++) { const a = Math.abs(samples[i]); if (a > tepe) tepe = a; } tepe = tepe || 1;
+  const step = Math.max(1, Math.floor(samples.length / W));
+  cx.strokeStyle = css.getPropertyValue("--wave"); cx.lineWidth = 1.2; cx.beginPath();
+  for (let x = 0; x < W; x++) {
+    let mn = 0, mx = 0; const s0 = x * step;
+    for (let j = s0; j < Math.min(s0 + step, samples.length); j++) { if (samples[j] < mn) mn = samples[j]; if (samples[j] > mx) mx = samples[j]; }
+    cx.moveTo(x, H/2 - mx/tepe*H*0.42); cx.lineTo(x, H/2 - mn/tepe*H*0.42);
+  }
+  cx.stroke();
+  const sure = samples.length / rate; cx.font = "600 26px " + css.getPropertyValue("--mono");
+  gruplar.forEach((grup, gi) => {
+    const renk = css.getPropertyValue(gi % 2 ? "--mark2" : "--mark");
+    cx.strokeStyle = renk; cx.fillStyle = renk; cx.lineWidth = 3;
+    grup.forEach(t => { const x = t / sure * W; cx.beginPath(); cx.moveTo(x, 34); cx.lineTo(x, H); cx.stroke(); });
+    cx.fillText("B" + (gi + 1), Math.min(grup[0] / sure * W + 6, W - 60), 28);
+  });
+}
+
+/* ---------- DURUM VE DEPOLAMA ---------- */
+const DEPO = "sekmeolcer-v2", TOPDEPO = "sekmeolcer-toplar";
+let ses = null, oran = 44100, sonBirakislar = [], sonBlob = null, sonAd = "";
+let kayitlar = dene(() => JSON.parse(localStorage.getItem(DEPO) || "[]")) || [];
+let toplar = dene(() => JSON.parse(localStorage.getItem(TOPDEPO) || "{}")) || {};
+const depola = () => dene(() => localStorage.setItem(DEPO, JSON.stringify(kayitlar)));
+const topDepola = () => dene(() => localStorage.setItem(TOPDEPO, JSON.stringify(toplar)));
+let konum = null;
+function durum(m, hata=false) { const d = $("durum"); d.textContent = m; d.classList.toggle("err", hata); }
+function vdurum2(m, hata=false) { const d = $("vdurum2"); d.textContent = m; d.classList.toggle("err", hata); }
+function hucre(tr, v, num) { const td = document.createElement("td"); if (v instanceof Node) td.appendChild(v); else td.textContent = v; if (num) td.className = "num"; tr.appendChild(td); }
+function pill(tip, metin) { const s = document.createElement("span"); s.className = "pill " + tip; s.textContent = metin; return s; }
+
+if (CLAUDE_ICINDE) {
+  const o = $("ortam"); o.hidden = false;
+  o.textContent = "Claude içinde açıldı: canlı mikrofon ve konum burada çalışmaz. Telefonun ses kaydedicisiyle kaydedip \"Ses dosyası yükle\" ile yükleyin. Tüm özellikler için kendi sitenizdeki SekmeÖlçer'i kullanın.";
+}
+
+/* ---------- TOPLAR ---------- */
+// Toplar bir kez eklenir, ölçümde yalnızca listeden seçilir.
+if (!Object.keys(toplar).length) {
+  toplar = { "Yeşil Yoyo": { kutle_g: 73, cap_cm: 6.05, tur: "Yoğun köpük" }, "Pembe Yoyo": { kutle_g: 75, cap_cm: 5.89, tur: "Yoğun köpük" },
+             "GS Top": { kutle_g: 54, cap_cm: 9.77, tur: "" }, "Star Top": { kutle_g: 62, cap_cm: 13.28, tur: "" } };
+  topDepola();
+}
+const yogunlukHesapla = (m, d) => m > 0 && d > 0 ? m / (4/3 * Math.PI * (d/2) ** 3) : NaN;
+function yogunlukPill(rho) {
+  if (rho > 2.5) return pill("bad", "çok yüksek: çap ya da kütleyi kontrol edin");
+  if (rho < 0.02) return pill("warn", "çok düşük: ölçüleri kontrol edin");
+  return pill("ok", rho < 1 ? "suda yüzer" : "suda batar");
+}
+function yogunlukGoster() {
+  const rho = yogunlukHesapla(sayi("f-kutle"), sayi("f-cap")), el = $("yogunluk"); el.textContent = "";
+  if (!Number.isFinite(rho)) return;
+  el.append("Yoğunluk: " + fmt(rho, 2) + " g/cm³ "); el.appendChild(yogunlukPill(rho));
+}
+const seciliTop = () => $("f-tophazir").value;
+function topOzet() {
+  const ad = seciliTop(), t = toplar[ad], el = $("topozet"); el.textContent = "";
+  $("b-topduzenle").disabled = $("b-topsil").disabled = !t; $("b-topsil-onay").hidden = true;
+  if (!t) { el.textContent = "Ölçüme başlamadan önce bir top ekleyin ya da seçin."; return; }
+  const rho = yogunlukHesapla(t.kutle_g, t.cap_cm);
+  el.append(`${t.kutle_g} g · çap ${fmt(t.cap_cm, 2)} cm${t.tur ? " · " + t.tur : ""} · yoğunluk ${fmt(rho, 2)} g/cm³ `); el.appendChild(yogunlukPill(rho));
+}
+function topListesi(sec) {
+  const sel = $("f-tophazir"), once = sec ?? sel.value; sel.innerHTML = "";
+  const adlar = Object.keys(toplar).sort((a,b) => a.localeCompare(b, "tr"));
+  if (!adlar.length) sel.innerHTML = '<option value="">Henüz top yok</option>';
+  adlar.forEach(ad => { const o = document.createElement("option"); o.value = ad; o.textContent = `${ad} · ${toplar[ad].kutle_g} g · ${fmt(toplar[ad].cap_cm, 2)} cm`; sel.appendChild(o); });
+  if (toplar[once]) sel.value = once;
+  topOzet();
+}
+let duzenlenen = null;
+function topFormAc(ad) {
+  duzenlenen = ad || null; const t = ad ? toplar[ad] : null;
+  $("topform-baslik").textContent = ad ? "Topu düzenle" : "Yeni top";
+  $("f-top").value = ad || ""; $("f-tur").value = t ? (t.tur || "") : "";
+  $("f-kutle").value = t ? t.kutle_g : ""; $("f-cap").value = t ? t.cap_cm : ""; $("f-cevre").value = t ? (t.cap_cm * Math.PI).toFixed(1) : "";
+  yogunlukGoster(); $("topform").hidden = false; $("f-top").focus();
+}
+$("b-topekle").addEventListener("click", () => topFormAc(null));
+$("b-topduzenle").addEventListener("click", () => { if (toplar[seciliTop()]) topFormAc(seciliTop()); });
+$("b-topvazgec").addEventListener("click", () => { $("topform").hidden = true; });
+$("f-cevre").addEventListener("input", () => { const c = sayi("f-cevre"); if (c > 0) $("f-cap").value = (c / Math.PI).toFixed(2); yogunlukGoster(); });
+$("f-cap").addEventListener("input", () => { const d = sayi("f-cap"); if (d > 0) $("f-cevre").value = (d * Math.PI).toFixed(1); yogunlukGoster(); });
+$("f-kutle").addEventListener("input", yogunlukGoster);
+$("b-topkaydet").addEventListener("click", () => {
+  const ad = $("f-top").value.trim(), kutle = sayi("f-kutle"), cap = sayi("f-cap");
+  if (!ad) { $("yogunluk").textContent = "Topa bir ad verin."; return; }
+  if (!(kutle > 0 && cap > 0)) { $("yogunluk").textContent = "Kütle ve çapı (ya da çevreyi) girin."; return; }
+  if (duzenlenen && duzenlenen !== ad) delete toplar[duzenlenen];
+  toplar[ad] = { kutle_g: kutle, cap_cm: cap, tur: $("f-tur").value };
+  topDepola(); $("topform").hidden = true; topListesi(ad); ayarKaydet();
+});
+$("b-topsil").addEventListener("click", () => { if (toplar[seciliTop()]) $("b-topsil-onay").hidden = false; });
+$("b-topsil-onay").addEventListener("click", () => { delete toplar[seciliTop()]; topDepola(); topListesi(""); ayarKaydet(); });
+$("f-tophazir").addEventListener("change", () => { topOzet(); ayarKaydet(); });
+
+/* ---------- AYARLARI HATIRLA ---------- */
+const AYARDEPO = "sekmeolcer-ayar", AYAR_ALANLARI = ["f-yer","f-zemin","f-nokta","f-sicaklik","f-yukseklik"];
+function ayarKaydet() {
+  const a = { top: seciliTop(), ref: $("f-ref").checked }; AYAR_ALANLARI.forEach(id => a[id] = $(id).value);
+  dene(() => localStorage.setItem(AYARDEPO, JSON.stringify(a)));
+}
+function ayarYukle() {
+  const a = dene(() => JSON.parse(localStorage.getItem(AYARDEPO) || "null"));
+  if (a) { AYAR_ALANLARI.forEach(id => { if (a[id] != null) $(id).value = a[id]; }); $("f-ref").checked = !!a.ref; }
+  topListesi(a && toplar[a.top] ? a.top : undefined);
+}
+AYAR_ALANLARI.forEach(id => $(id).addEventListener("change", ayarKaydet));
+$("f-ref").addEventListener("change", ayarKaydet);
+
+/* ---------- KONUM ---------- */
+$("b-konum").addEventListener("click", () => {
+  const y = $("konum-yazi");
+  if (!navigator.geolocation) { y.textContent = "Bu cihaz konum vermiyor."; return; }
+  y.textContent = "Konum alınıyor…";
+  navigator.geolocation.getCurrentPosition(
+    p => { konum = { lat: p.coords.latitude, lon: p.coords.longitude, dogruluk: p.coords.accuracy };
+           y.textContent = `${konum.lat.toFixed(5)}, ${konum.lon.toFixed(5)} (±${Math.round(konum.dogruluk)} m). Bu konum sonraki kayıtlara eklenir.`; },
+    () => { y.textContent = CLAUDE_ICINDE ? "Claude içinde konum alınamıyor." : "Konum izni verilmedi ya da alınamadı."; },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+});
+
+/* ---------- ANALİZİ GÖSTER ---------- */
+function analizEt() {
+  if (!ses) return;
+  const K = parseFloat($("f-esik").value), H0 = sayi("f-yukseklik");
+  $("esik-deger").textContent = "×" + K;
+  const gruplar = birakislaraAyir(tiklariBul(ses, oran, K));
+  sonBirakislar = durumlariBelirle(gruplar.map(gr => birakisHesapla(gr, H0)));
+  ciz(ses, oran, gruplar);
+  const tb = $("t-birakis"); tb.innerHTML = "";
+  sonBirakislar.forEach((b, i) => {
+    const tr = document.createElement("tr");
+    hucre(tr, "B" + (i+1)); hucre(tr, String(b.tik), true); hucre(tr, fmt(b.t1), true); hucre(tr, fmt(b.t2), true);
+    hucre(tr, fmt(b.e), true); hucre(tr, fmt(b.e2), true); hucre(tr, fmt(b.eH), true);
+    hucre(tr, b.durum === "ok" ? pill("ok","geçerli") : b.durum === "az" ? pill("bad","3'ten az tık") : b.durum === "t1" ? pill("warn","t₁ diğerlerinden farklı") : pill("warn","e diğerlerinden farklı"));
+    tb.appendChild(tr);
+  });
+  if (!sonBirakislar.length) tb.innerHTML = '<tr><td colspan="8" class="note">Tık bulunamadı. Eşik kaydırıcısını sola çekin.</td></tr>';
+  const gecerli = sonBirakislar.filter(b => b.durum === "ok").map(b => b.e);
+  $("k-n").textContent = gecerli.length; $("k-ort").textContent = fmt(ort(gecerli)); $("k-ss").textContent = fmt(ss(gecerli));
+  const btn = $("b-ekle"); btn.disabled = !gecerli.length; btn.textContent = "Geçerli bırakışları kaydet"; delete btn.dataset.yine;
+  sesSecenekleriniGuncelle();
+}
+
+/* ---------- SES GİRİŞLERİ ---------- */
+function blobOku(blob) {
+  if (blob.arrayBuffer) return blob.arrayBuffer();
+  return new Promise((ok, hata) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => hata(r.error); r.readAsArrayBuffer(blob); });
+}
+function sesCoz(ac, veri) {
+  return new Promise((ok, hata) => {
+    const zaman = setTimeout(() => hata(new Error("20 saniyede çözülemedi")), 20000);
+    const bitti = b => { clearTimeout(zaman); ok(b); }, olmadi = e => { clearTimeout(zaman); hata(e || new Error("biçim desteklenmiyor")); };
+    try { const p = ac.decodeAudioData(veri, bitti, olmadi); if (p && p.then) p.then(bitti, olmadi); } catch (e) { olmadi(e); }
+  });
+}
+async function blobuCoz(blob, kaydir) {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) throw new Error("bu tarayıcı ses çözmeyi desteklemiyor");
+  const ac = new AC(); let sure = 0;
+  try {
+    const buf = await sesCoz(ac, await blobOku(blob));
+    ses = buf.getChannelData(0); oran = buf.sampleRate; sure = buf.duration;
+  } finally { dene(() => ac.close && ac.close()); }
+  analizEt();
+  const n = sonBirakislar.length, gecerli = sonBirakislar.filter(b => b.durum === "ok").length;
+  if (!n) durum(`Ses okundu (${fmt(sure,1)} s) ama tık bulunamadı. Eşik kaydırıcısını sola çekin ya da telefonu düşme noktasına yaklaştırıp yeniden kaydedin.`, true);
+  else durum(`Ses okundu (${fmt(sure,1)} s). ${n} bırakış bulundu, ${gecerli} tanesi geçerli. Sonuçlar 3. bölümde.`);
+  if (n && kaydir) $("h-kayit").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function dosyaAdi(uzanti) {
+  const temiz = s => String(s || "").trim().replace(/\s+/g, "-").replace(/[^\p{L}\p{N}\-]/gu, "").slice(0, 24);
+  const z = new Date(), iki = n => String(n).padStart(2, "0");
+  return `sekme_${temiz(seciliTop())}_${temiz($("f-zemin").value)}_${z.getFullYear()}${iki(z.getMonth()+1)}${iki(z.getDate())}-${iki(z.getHours())}${iki(z.getMinutes())}.${uzanti}`;
+}
+$("f-dosya").addEventListener("change", async ev => {
+  const f = ev.target.files && ev.target.files[0]; if (!f) { durum("Dosya seçilmedi.", true); return; }
+  durum(`Dosya alındı: ${f.name} (${Math.round(f.size/1024)} KB). Çözülüyor…`);
+  try { await blobuCoz(f, true); sonBlob = null; $("b-hamindir").disabled = true; }
+  catch (e) { durum(`Bu ses dosyası okunamadı (${f.name}: ${e && e.message ? e.message : e}). Ses kaydedicide biçimi M4A, WAV ya da MP3 seçip yeniden deneyin.`, true); }
+  ev.target.value = "";
+});
+
+// Canlı mikrofon kaydı: seviye göstergesi, süre sayacı, ekranın kapanmasını önleme
+let kaydedici = null, parcalar = [], akis = null, sevAc = null, sevDongu = 0, sayacDongu = 0, kilit = null, basla = 0;
+function kayitTipi() {
+  if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return "";
+  return ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"].find(t => MediaRecorder.isTypeSupported(t)) || "";
+}
+function seviyeBaslat(st) {
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  sevAc = new AC(); const an = sevAc.createAnalyser(); an.fftSize = 1024;
+  sevAc.createMediaStreamSource(st).connect(an);
+  const v = new Float32Array(an.fftSize); let tutulan = 0, tutZaman = 0;
+  $("seviye-kutu").hidden = false;
+  const dongu = () => {
+    an.getFloatTimeDomainData(v); let p = 0; for (let i = 0; i < v.length; i++) p = Math.max(p, Math.abs(v[i]));
+    const simdi = performance.now(); if (p > tutulan || simdi - tutZaman > 600) { tutulan = p; tutZaman = simdi; }
+    const yuzde = Math.min(100, Math.round(Math.sqrt(tutulan) * 100));
+    const bar = $("seviye"); bar.style.width = yuzde + "%"; bar.classList.toggle("yuksek", tutulan > 0.95);
+    $("seviye-yazi").textContent = tutulan > 0.95 ? "çok yüksek" : yuzde < 3 ? "sessiz" : "";
+    sevDongu = requestAnimationFrame(dongu);
+  };
+  dongu();
+}
+function kayitBitir() {
+  cancelAnimationFrame(sevDongu); clearInterval(sayacDongu);
+  dene(() => sevAc && sevAc.close()); sevAc = null;
+  if (akis) akis.getTracks().forEach(t => t.stop()); akis = null;
+  dene(() => kilit && kilit.release()); kilit = null;
+  $("b-kayit").classList.remove("recording"); $("b-kayit-yazi").textContent = "Kaydı başlat";
+  $("seviye-kutu").hidden = true; $("sayac").hidden = true;
+}
+$("b-kayit").addEventListener("click", async () => {
+  if (kaydedici && kaydedici.state === "recording") { kaydedici.stop(); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+    durum(CLAUDE_ICINDE ? "Claude içinde açılan sayfalar mikrofona erişemiyor. Telefonun ses kaydedicisiyle kaydedip \"Ses dosyası yükle\" ile yükleyin." : "Bu tarayıcı mikrofonla kayıt yapamıyor. Sayfanın https:// ile açıldığından emin olun ya da ses dosyası yükleyin.", true); return;
+  }
+  try {
+    akis = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  } catch (e) {
+    durum(CLAUDE_ICINDE ? "Claude içinde açılan sayfalar mikrofona erişemiyor. Telefonun ses kaydedicisiyle kaydedip \"Ses dosyası yükle\" ile yükleyin." : "Mikrofon izni verilmedi. Tarayıcının adres çubuğundaki kilit simgesinden mikrofon iznini açın.", true); return;
+  }
+  const tip = kayitTipi(); parcalar = [];
+  kaydedici = tip ? new MediaRecorder(akis, { mimeType: tip }) : new MediaRecorder(akis);
+  kaydedici.ondataavailable = e => { if (e.data && e.data.size) parcalar.push(e.data); };
+  kaydedici.onstop = async () => {
+    const mt = kaydedici.mimeType || tip || "audio/webm"; kayitBitir();
+    sonBlob = new Blob(parcalar, { type: mt }); sonAd = dosyaAdi(mt.includes("mp4") ? "m4a" : mt.includes("ogg") ? "ogg" : "webm");
+    $("b-hamindir").disabled = false; durum("Kayıt çözülüyor…");
+    try { await blobuCoz(sonBlob, true); } catch (e) { durum("Kayıt çözülemedi. Tekrar deneyin ya da ham kaydı indirip gönderin.", true); }
+  };
+  kaydedici.start(250); basla = Date.now();
+  $("b-kayit").classList.add("recording"); $("b-kayit-yazi").textContent = "Durdur";
+  const sy = $("sayac"); sy.hidden = false; sy.textContent = "00:00";
+  sayacDongu = setInterval(() => { const s = Math.floor((Date.now() - basla) / 1000); sy.textContent = String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0"); }, 250);
+  seviyeBaslat(akis);
+  if (navigator.wakeLock) navigator.wakeLock.request("screen").then(k => { kilit = k; }).catch(() => {});
+  durum("Kaydediliyor… Topu bırakın; her bırakıştan sonra topu yakalayıp 2 saniye bekleyin. Bitince Durdur'a basın.");
+});
+$("b-hamindir").addEventListener("click", async () => {
+  if (!sonBlob) return;
+  const s = await dosyaVer(sonAd, sonBlob, sonBlob.type);
+  durum(s === "iptal" ? "İndirme iptal edildi." : s ? "Ham kayıt indirildi: " + sonAd : "Bu görünümde dosya indirilemiyor.", !s);
+});
+
+// Gerçeğe benzeyen yapay kayıt: her çarpma kısa, geniş frekanslı bir patlama + çınlama; ses şiddeti çarpma hızıyla azalır
+function ornekSes(eler, H0 = 1.0, rate = 44100, gurultu = 0.003, tohum = 11) {
+  const bekle = 6, sure = 0.5 + eler.length * bekle;
+  const x = new Float32Array(Math.round(sure * rate)); let s = tohum;
+  const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647 - 0.5; };
+  for (let i = 0; i < x.length; i++) x[i] = rnd() * gurultu;
+  const v0 = Math.sqrt(2*g*H0);
+  eler.forEach((e, k) => {
+    let t = 0.3 + k * bekle + Math.sqrt(2*H0/g), vin = v0, n = 0;
+    while (n++ < 6) {
+      const i0 = Math.round(t * rate), a = 0.8 * vin / v0;
+      for (let j = 0; j < 0.15 * rate && i0 + j < x.length; j++)
+        x[i0+j] += a * (2 * rnd() * Math.exp(-j / (0.0008*rate)) + 0.4 * Math.exp(-j / (0.04*rate)) * Math.sin(2*Math.PI*350*j/rate));
+      const vout = e * vin; t += 2*vout/g; vin = vout;
+    }
+  });
+  return x;
+}
+$("b-ornek").addEventListener("click", () => {
+  oran = 44100; ses = ornekSes([0.80, 0.79, 0.81, 0.80, 0.795]); $("f-yukseklik").value = "1.00"; sonBlob = null; $("b-hamindir").disabled = true;
+  durum("Örnek kayıt yüklendi: 1 m'den 5 bırakış, gerçek e değerleri 0,79–0,81 arasında (yapay ses).");
+  analizEt();
+});
+$("f-esik").addEventListener("input", analizEt);
+$("f-yukseklik").addEventListener("change", analizEt);
+
+/* ---------- KAYITLAR VE KARŞILAŞTIRMA ---------- */
+function kayitListesiCiz() {
+  const tb = $("t-kayitlar"); tb.innerHTML = "";
+  const gruplar = new Map();
+  for (const k of kayitlar) { if (!gruplar.has(k.kayit)) gruplar.set(k.kayit, []); gruplar.get(k.kayit).push(k); }
+  for (const [no, liste] of gruplar) {
+    const k = liste[0], tr = document.createElement("tr");
+    hucre(tr, String(no), true); hucre(tr, k.top); hucre(tr, (k.yer ? k.yer + " · " : "") + k.zemin + (k.ref ? " (ref)" : "")); hucre(tr, k.nokta || "—"); hucre(tr, String(liste.length), true); hucre(tr, fmt(ort(liste.map(x => x.e))), true);
+    const btn = document.createElement("button"); btn.textContent = "Sil"; btn.className = "kucuk";
+    btn.addEventListener("click", () => {
+      if (btn.dataset.onay !== "1") { btn.dataset.onay = "1"; btn.textContent = "Emin misiniz? Sil"; return; }
+      kayitlar = kayitlar.filter(x => x.kayit !== no); depola(); karsilastirmayiCiz(); vdurum2(`Kayıt ${no} silindi.`);
+    });
+    hucre(tr, btn); tb.appendChild(tr);
+  }
+  if (!gruplar.size) tb.innerHTML = '<tr><td colspan="7" class="note">Kayıt yok.</td></tr>';
+}
+function zyoHesapla(eZemin, eRef) {
+  const e = ort(eZemin), eR = ort(eRef), br = (e / eR) ** 2;
+  const se = a => a.length > 1 ? ss(a) / Math.sqrt(a.length) : 0;
+  const hata = 2 * br * Math.sqrt((se(eZemin) / e) ** 2 + (se(eRef) / eR) ** 2);
+  return { br, zyo: 1 - br, hata };
+}
+function grupla() {
+  const gruplar = new Map();
+  for (const k of kayitlar) {
+    const anahtar = k.top + "\u0000" + k.zemin;
+    if (!gruplar.has(anahtar)) gruplar.set(anahtar, { top:k.top, zemin:k.zemin, e:[], c:[], ref:false });
+    const gr = gruplar.get(anahtar); gr.e.push(k.e); if (Number.isFinite(k.sicaklik)) gr.c.push(k.sicaklik); if (k.ref) gr.ref = true;
+  }
+  return [...gruplar.values()].sort((a,b) => a.top.localeCompare(b.top,"tr") || (b.ref - a.ref) || ort(b.e) - ort(a.e));
+}
+function grafikCiz(gruplar) {
+  const kutu = $("grafik"); kutu.innerHTML = "";
+  if (!gruplar.length) { kutu.innerHTML = '<p class="note">Kayıt olunca burada her bırakış bir nokta, ortalama bir çizgi olarak görünür.</p>'; return; }
+  const tum = gruplar.flatMap(g => g.e), mn = Math.min(...tum), mx = Math.max(...tum);
+  const alt = Math.floor((mn - 0.01) * 50) / 50, ust = Math.ceil((mx + 0.01) * 50) / 50;
+  const W = 440, sol = 140, sag = 14, satirH = 34, ustB = 10, H = ustB + gruplar.length * satirH + 34;
+  const X = v => sol + (v - alt) / (ust - alt || 1) * (W - sol - sag);
+  const NS = "http://www.w3.org/2000/svg", el = (t, a) => { const n = document.createElementNS(NS, t); for (const k in a) n.setAttribute(k, a[k]); return n; };
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Her top ve zemin için bırakışların e değerleri" });
+  const adim = (ust - alt) > 0.12 ? 0.04 : 0.02;
+  for (let v = alt; v <= ust + 1e-9; v += adim) {
+    svg.appendChild(el("line", { x1: X(v), x2: X(v), y1: ustB, y2: H - 26, class: "eksen" }));
+    const t = el("text", { x: X(v), y: H - 8, "text-anchor": "middle", class: "ekseny" }); t.textContent = v.toFixed(2).replace(".", ","); svg.appendChild(t);
+  }
+  gruplar.forEach((gr, i) => {
+    const y = ustB + i * satirH + satirH / 2;
+    const t = el("text", { x: 0, y: y + 4 }); t.textContent = (gr.top + " · " + gr.zemin + (gr.ref ? " (ref)" : "")).slice(0, 22); svg.appendChild(t);
+    gr.e.forEach((v, j) => svg.appendChild(el("circle", { cx: X(v), cy: y + ((j % 3) - 1) * 4, r: 4.5, class: "nokta" })));
+    const m = ort(gr.e); svg.appendChild(el("line", { x1: X(m), x2: X(m), y1: y - 10, y2: y + 10, class: "ortcizgi" }));
+  });
+  kutu.appendChild(svg);
+}
+function karsilastirmayiCiz() {
+  const gruplar = grupla();
+  const refler = new Map(); for (const gr of gruplar) if (gr.ref && !refler.has(gr.top)) refler.set(gr.top, gr);
+  const tb = $("t-grup"); tb.innerHTML = "";
+  gruplar.forEach(gr => {
+    const tr = document.createElement("tr"); hucre(tr, gr.top);
+    const z = document.createElement("span"); z.textContent = gr.zemin + " "; if (gr.ref) z.appendChild(pill("ok","referans")); hucre(tr, z);
+    hucre(tr, String(gr.e.length), true); hucre(tr, fmt(ort(gr.c),1), true); hucre(tr, fmt(ort(gr.e)), true); hucre(tr, fmt(ss(gr.e)), true);
+    const R = refler.get(gr.top);
+    if (gr.ref) { hucre(tr, "%100", true); hucre(tr, "%0", true); }
+    else if (R) { const v = zyoHesapla(gr.e, R.e); hucre(tr, "%" + fmt(v.br*100,1), true); hucre(tr, "%" + fmt(v.zyo*100,1) + " ± " + fmt(v.hata*100,1), true); }
+    else { hucre(tr, "—", true); hucre(tr, "referans yok"); }
+    tb.appendChild(tr);
+  });
+  if (!gruplar.length) tb.innerHTML = '<tr><td colspan="8" class="note">Kaydedilen bırakış yok.</td></tr>';
+  grafikCiz(gruplar);
+  const topGr = new Map();
+  for (const gr of gruplar) if (gr.e.length >= 2 && !gr.ref) { if (!topGr.has(gr.top)) topGr.set(gr.top, []); topGr.get(gr.top).push(gr); }
+  const ta = $("t-ayirt"); ta.innerHTML = ""; let satir = 0;
+  [...topGr.entries()].map(([top, grs]) => {
+    if (grs.length < 2) return null;
+    const ortlar = grs.map(g => ort(g.e)), fark = Math.max(...ortlar) - Math.min(...ortlar);
+    const ssOrt = Math.sqrt(ort(grs.map(g => ss(g.e) ** 2)));
+    return { top, n: grs.length, fark, guc: ssOrt > 0 ? fark / ssOrt : Infinity };
+  }).filter(Boolean).sort((a,b) => b.guc - a.guc).forEach(r => {
+    const tr = document.createElement("tr"); hucre(tr, r.top); hucre(tr, String(r.n), true); hucre(tr, fmt(r.fark), true); hucre(tr, Number.isFinite(r.guc) ? fmt(r.guc,1) : "çok yüksek", true);
+    hucre(tr, r.guc >= 3 ? pill("ok","net ayırıyor") : r.guc >= 1 ? pill("warn","orta") : pill("bad","ayıramıyor")); ta.appendChild(tr); satir++;
+  });
+  if (!satir) ta.innerHTML = '<tr><td colspan="5" class="note">Aynı topla en az iki zeminde, her birinde en az 2 bırakış kaydedin.</td></tr>';
+  kayitListesiCiz();
+}
+const imza = eler => eler.map(v => v.toFixed(4)).join("|");
+let kayitNo = kayitlar.reduce((m,k) => Math.max(m, k.kayit || 0), 0);
+$("b-ekle").addEventListener("click", () => {
+  const btn = $("b-ekle"), gecerli = sonBirakislar.filter(b => b.durum === "ok");
+  if (!gecerli.length) return;
+  // aynı kayıt ikinci kez eklenmesin
+  const mevcut = new Set(); const byNo = new Map();
+  for (const k of kayitlar) { if (!byNo.has(k.kayit)) byNo.set(k.kayit, []); byNo.get(k.kayit).push(k.e); }
+  for (const l of byNo.values()) mevcut.add(imza(l));
+  if (mevcut.has(imza(gecerli.map(b => b.e))) && btn.dataset.yine !== "1") {
+    btn.dataset.yine = "1"; btn.textContent = "Yine de kaydet";
+    durum("Bu bırakışlar zaten kaydedilmiş görünüyor. Gerçekten yeni bir ölçümse \"Yine de kaydet\"e basın.", true); return;
+  }
+  const ad = seciliTop(), t = toplar[ad];
+  if (!t) { durum("Önce 1. bölümden bir top seçin ya da ekleyin.", true); $("h-olcum").scrollIntoView({ behavior: "smooth" }); return; }
+  const kutle = t.kutle_g, cap = t.cap_cm;
+  kayitNo++;
+  const ortak = { kayit: kayitNo, yer: $("f-yer").value.trim(), top: ad, kutle_g: kutle, cap_cm: cap, tur: t.tur || "",
+    zemin: $("f-zemin").value.trim() || "Adsız zemin", ref: $("f-ref").checked, nokta: $("f-nokta").value.trim(), sicaklik: sayi("f-sicaklik"),
+    yukseklik: sayi("f-yukseklik"), lat: konum ? konum.lat : null, lon: konum ? konum.lon : null, zaman: new Date().toISOString() };
+  sonBirakislar.forEach((b, i) => { if (b.durum !== "ok") return; kayitlar.push({ ...ortak, birakis: i+1, tik: b.tik, t1: b.t1, t2: b.t2, t3: b.t3 ?? null, e: b.e, e2: Number.isFinite(b.e2) ? b.e2 : null, eH: b.eH }); });
+  depola(); karsilastirmayiCiz(); btn.disabled = true; btn.textContent = "Geçerli bırakışları kaydet"; delete btn.dataset.yine;
+  durum(`${gecerli.length} bırakış kaydedildi (${ad} · ${ortak.zemin}). Sıradaki kayda geçebilirsiniz.`);
+});
+
+/* ---------- VERİYİ DIŞARI AL ---------- */
+function csv() {
+  const alanlar = ["kayit","yer","top","kutle_g","cap_cm","tur","zemin","ref","nokta","sicaklik","yukseklik","lat","lon","birakis","tik","t1","t2","t3","e","e2","eH","zaman"];
+  const yaz = v => typeof v === "number" ? (Number.isFinite(v) ? String(+v.toFixed(6)) : "") : v == null ? "" : `"${String(v).replace(/"/g,'""')}"`;
+  return [alanlar.join(","), ...kayitlar.map(k => alanlar.map(a => yaz(k[a])).join(","))].join("\n");
+}
+// Claude içinde "downloads" yeteneği; kendi sitede normal tarayıcı indirmesi
+let indirme = null;
+(async () => {
+  if (!CLAUDE_ICINDE) return;
+  for (let i = 0; i < 40 && !(window.claude && window.claude.use); i++) await new Promise(r => setTimeout(r, 250));
+  try { indirme = window.claude && window.claude.use ? await window.claude.use("downloads") : null; } catch (_) { indirme = null; }
+})();
+async function dosyaVer(ad, veri, tip) {
+  if (indirme) {
+    try { await indirme.save({ filename: ad, data: veri }); return "ok"; }
+    catch (e) { return e && e.code === "declined" ? "iptal" : ""; }
+  }
+  if (CLAUDE_ICINDE) return "";
+  const blob = veri instanceof Blob ? veri : new Blob([veri], { type: tip });
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = ad; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 15000);
+  return "ok";
+}
+function tumCsv() { return "﻿" + csv() + videoCsv(); }
+const bugun = () => new Date().toISOString().slice(0,10);
+$("b-indir").addEventListener("click", async () => {
+  if (!kayitlar.length && !vDogrulamalar.length) { vdurum2("Kaydedilecek bırakış yok.", true); return; }
+  const s = await dosyaVer(`sekmeolcer_${bugun()}.csv`, tumCsv(), "text/csv");
+  vdurum2(s === "ok" ? "CSV dosyası indirildi (İndirilenler klasörü)." : s === "iptal" ? "İndirme iptal edildi." : "Bu görünümde dosya indirilemiyor. «Kopyala»yı kullanın.", s !== "ok" && s !== "iptal");
+});
+// Paylaş: telefonun paylaşım menüsü (WhatsApp, Drive, e-posta…)
+(() => {
+  if (CLAUDE_ICINDE || !navigator.canShare || !window.File) return;
+  const ok = dene(() => navigator.canShare({ files: [new File(["a"], "a.csv", { type: "text/csv" })] }));
+  if (ok) $("b-paylas").hidden = false;
+})();
+$("b-paylas").addEventListener("click", async () => {
+  if (!kayitlar.length) { vdurum2("Paylaşılacak bırakış yok.", true); return; }
+  const dosyalar = [new File([tumCsv()], `sekmeolcer_${bugun()}.csv`, { type: "text/csv" })];
+  if (sonBlob) dosyalar.push(new File([sonBlob], sonAd, { type: sonBlob.type }));
+  const paylas = navigator.canShare({ files: dosyalar }) ? dosyalar : dosyalar.slice(0, 1);
+  try { await navigator.share({ files: paylas, title: "SekmeÖlçer verileri" }); vdurum2("Paylaşıldı."); }
+  catch (e) { if (!e || e.name !== "AbortError") vdurum2("Paylaşılamadı. «CSV indir»i kullanın.", true); }
+});
+$("b-kopyala").addEventListener("click", async () => {
+  const metin = csv() + videoCsv(), pre = $("csv"); pre.textContent = metin; pre.hidden = false;
+  try { await navigator.clipboard.writeText(metin); vdurum2("Tablo panoya kopyalandı. Claude sohbetine ya da E-Tablolar'a yapıştırabilirsiniz."); }
+  catch (_) { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); vdurum2("Kopyalama izni yok; metin seçildi, elle kopyalayın."); }
+});
+$("b-yedek").addEventListener("click", async () => {
+  const veri = JSON.stringify({ uygulama: "SekmeOlcer", surum: SURUM, tarih: new Date().toISOString(), kayitlar, toplar, video: vDogrulamalar }, null, 1);
+  const s = await dosyaVer(`sekmeolcer_yedek_${bugun()}.json`, veri, "application/json");
+  vdurum2(s === "ok" ? "Yedek dosyası indirildi. Güvenli bir yerde (Drive, e-posta) saklayın." : s === "iptal" ? "Yedek iptal edildi." : "Bu görünümde dosya indirilemiyor.", s !== "ok" && s !== "iptal");
+});
+$("f-yedek").addEventListener("change", async ev => {
+  const f = ev.target.files && ev.target.files[0]; ev.target.value = ""; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!d || !Array.isArray(d.kayitlar)) throw new Error("SekmeÖlçer yedeği değil");
+    const var_ = new Set(kayitlar.map(k => k.zaman + "|" + k.birakis + "|" + k.top));
+    const esle = new Map(); let eklenen = 0;
+    for (const k of d.kayitlar) {
+      if (var_.has(k.zaman + "|" + k.birakis + "|" + k.top)) continue;
+      if (!esle.has(k.kayit)) esle.set(k.kayit, ++kayitNo);
+      kayitlar.push({ ...k, kayit: esle.get(k.kayit) }); eklenen++;
+    }
+    Object.assign(toplar, d.toplar || {});
+    if (Array.isArray(d.video)) { const vv = new Set(vDogrulamalar.map(x => x.zaman)); d.video.forEach(x => { if (!vv.has(x.zaman)) vDogrulamalar.push(x); }); vDepola(); vListeyiCiz(); }
+    depola(); topDepola(); topListesi(); karsilastirmayiCiz();
+    vdurum2(`Yedekten ${eklenen} bırakış eklendi${eklenen < d.kayitlar.length ? `; ${d.kayitlar.length - eklenen} tanesi zaten vardı` : ""}.`);
+  } catch (e) { vdurum2("Yedek dosyası okunamadı: " + (e && e.message ? e.message : e), true); }
+});
+$("b-temizle").addEventListener("click", () => { $("b-temizle-onay").hidden = false; });
+$("b-temizle-onay").addEventListener("click", () => { kayitlar = []; depola(); karsilastirmayiCiz(); $("b-temizle-onay").hidden = true; $("csv").hidden = true; vdurum2("Tüm kayıtlar silindi."); });
+
+/* ---------- VİDEO DOĞRULAMA ---------- */
+const VDEPO = "sekmeolcer-video", SIRA = ["olcek1","olcek2","zemin","birak","tepe"];
+const IPUCU = {
+  olcek1: "Metrenin alttaki işaretine dokunun (örneğin 0 cm).",
+  olcek2: "Metrenin üstteki işaretine dokunun (örneğin 100 cm).",
+  zemin: "Topun yere değdiği bir kareye gidin ve topun alt yüzüne dokunun.",
+  birak: "Bırakma anındaki kareye gidin ve topun alt yüzüne dokunun.",
+  tepe: "1. sekmede topun en yükseğe çıktığı kareyi bulun ve alt yüzüne dokunun."
+};
+const ETIKET = { olcek1: "metre alt", olcek2: "metre üst", zemin: "zemin", birak: "bırakma", tepe: "tepe" };
+let vNokta = {}, vMod = "olcek1", vDogrulamalar = [], vSonuc = null;
+try { vDogrulamalar = JSON.parse(localStorage.getItem(VDEPO) || "[]"); } catch (_) { vDogrulamalar = []; }
+const vDepola = () => { try { localStorage.setItem(VDEPO, JSON.stringify(vDogrulamalar)); } catch (_) {} };
+const vid = $("vid"), vt = $("vtuval");
+function vDurum(m, hata=false) { const d = $("vdurum"); d.textContent = m; d.classList.toggle("err", hata); }
+function modSec(m) {
+  vMod = m;
+  document.querySelectorAll("[data-mod]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mod === m)));
+  vDurum(IPUCU[m]);
+}
+function vCiz() {
+  if (!vid.videoWidth) return;
+  const cx = vt.getContext("2d"), W = vt.width, H = vt.height, css = getComputedStyle(document.documentElement);
+  cx.drawImage(vid, 0, 0, W, H);
+  const lw = Math.max(1, W / 700), fs = Math.max(12, Math.round(W / 50));
+  cx.font = `600 ${fs}px ` + css.getPropertyValue("--mono");
+  const { o1, o2, zemin } = { o1: vNokta.olcek1, o2: vNokta.olcek2, zemin: vNokta.zemin };
+  const L = parseFloat($("f-olcek").value);
+  if (o1 && o2 && L > 0 && Math.abs(o2.y - o1.y) > 5) {
+    const pxCm = Math.abs(o2.y - o1.y) / L, taban = zemin ? zemin.y : Math.max(o1.y, o2.y);
+    for (let cm = 0; ; cm += 10) {
+      const y = taban - cm * pxCm; if (y < 0) break;
+      const kalin = cm % 50 === 0;
+      cx.globalAlpha = kalin ? 0.9 : 0.5; cx.strokeStyle = kalin ? "#ffd166" : "#ffffff"; cx.lineWidth = lw * (kalin ? 2 : 1);
+      cx.beginPath(); cx.moveTo(0, y); cx.lineTo(W, y); cx.stroke();
+      if (kalin || pxCm * 10 > fs * 1.6) { cx.globalAlpha = 1; cx.lineWidth = lw * 3; cx.strokeStyle = "#1a1a1a"; cx.strokeText(cm + " cm", 8, y - 6); cx.fillStyle = "#ffd166"; cx.fillText(cm + " cm", 8, y - 6); }
+    }
+    cx.globalAlpha = 1;
+  }
+  for (const m of SIRA) {
+    const p = vNokta[m]; if (!p) continue;
+    cx.strokeStyle = m.startsWith("olcek") ? "#7fd3ff" : "#ff7a45"; cx.fillStyle = cx.strokeStyle; cx.lineWidth = lw * 2.5;
+    cx.beginPath(); cx.arc(p.x, p.y, fs * 0.6, 0, Math.PI * 2); cx.stroke();
+    cx.beginPath(); cx.moveTo(p.x - fs, p.y); cx.lineTo(p.x + fs, p.y); cx.stroke();
+    const lx = Math.min(p.x + fs, W - fs * 6), ly = p.y - fs * 0.8;
+    cx.lineWidth = lw * 3; cx.strokeStyle = "#1a1a1a"; cx.strokeText(ETIKET[m], lx, ly); cx.fillText(ETIKET[m], lx, ly);
+  }
+}
+function vHesapla() {
+  const L = parseFloat($("f-olcek").value), o1 = vNokta.olcek1, o2 = vNokta.olcek2, z = vNokta.zemin, b = vNokta.birak, t = vNokta.tepe;
+  vSonuc = null;
+  let hB = NaN, hT = NaN, eV = NaN;
+  if (o1 && o2 && L > 0 && Math.abs(o2.y - o1.y) > 5 && z) {
+    const pxCm = Math.abs(o2.y - o1.y) / L;
+    if (b) hB = (z.y - b.y) / pxCm / 100;
+    if (t) hT = (z.y - t.y) / pxCm / 100;
+    if (hB > 0 && hT > 0) eV = Math.sqrt(hT / hB);
+  }
+  const i = $("f-vses").value, eS = i === "" ? NaN : sonBirakislar[+i]?.e;
+  $("v-hb").textContent = Number.isFinite(hB) ? fmt(hB, 3) + " m" : "—";
+  $("v-ht").textContent = Number.isFinite(hT) ? fmt(hT, 3) + " m" : "—";
+  $("v-e").textContent = fmt(eV);
+  $("v-fark").textContent = Number.isFinite(eS) ? fmt(eS) + " · " + (Number.isFinite(eV) ? fmt(eV - eS) : "—") : "—";
+  if (Number.isFinite(eV)) vSonuc = { hB, hT, eV, eS: Number.isFinite(eS) ? eS : null };
+  $("b-vkaydet").disabled = !vSonuc;
+  SIRA.forEach(m => { const btn = document.querySelector(`[data-mod="${m}"]`); btn.querySelector(".ok")?.remove(); if (vNokta[m]) { const s = document.createElement("span"); s.className = "ok"; s.textContent = " ✓"; btn.appendChild(s); } });
+}
+function sesSecenekleriniGuncelle() {
+  const sel = $("f-vses"), once = sel.value; sel.innerHTML = '<option value="">—</option>';
+  sonBirakislar.forEach((b, i) => { if (!Number.isFinite(b.e)) return; const o = document.createElement("option"); o.value = String(i); o.textContent = `B${i+1} · e = ${fmt(b.e)}`; sel.appendChild(o); });
+  if ([...sel.options].some(o => o.value === once)) sel.value = once;
+  if (typeof vHesapla === "function" && vid) vHesapla();
+}
+function vListeyiCiz() {
+  const tb = $("t-video"); tb.innerHTML = "";
+  vDogrulamalar.forEach(d => { const tr = document.createElement("tr"); hucre(tr, d.top); hucre(tr, d.zemin); hucre(tr, fmt(d.hB), true); hucre(tr, fmt(d.hT), true); hucre(tr, fmt(d.eV), true); hucre(tr, fmt(d.eS ?? NaN), true); hucre(tr, d.eS == null ? "—" : fmt(d.eV - d.eS), true); tb.appendChild(tr); });
+  if (!vDogrulamalar.length) tb.innerHTML = '<tr><td colspan="7" class="note">Kaydedilmiş doğrulama yok.</td></tr>';
+}
+function videoCsv() {
+  if (!vDogrulamalar.length) return "";
+  const s = v => typeof v === "number" ? String(+v.toFixed(5)) : `"${String(v ?? "").replace(/"/g,'""')}"`;
+  return "\n\nvideo_dogrulama\ntop,zemin,h_birakma_m,h_sekme_m,e_video,e_ses,zaman\n" + vDogrulamalar.map(d => [d.top, d.zemin, d.hB, d.hT, d.eV, d.eS ?? "", d.zaman].map(s).join(",")).join("\n");
+}
+function git(t) { if (!vid.duration) return; vid.currentTime = Math.max(0, Math.min(vid.duration - 0.001, t)); }
+$("f-video").addEventListener("change", ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  vNokta = {}; vid.src = URL.createObjectURL(f); vid.load(); vDurum("Video yükleniyor…");
+  ev.target.value = "";
+});
+vid.addEventListener("loadedmetadata", () => {
+  vt.width = vid.videoWidth; vt.height = vid.videoHeight;
+  $("vsahne").hidden = false; $("vkontroller").hidden = false;
+  $("f-vkaydir").max = String(vid.duration); git(0.001); modSec("olcek1"); vHesapla();
+});
+vid.addEventListener("error", () => vDurum("Bu video oynatılamadı. Telefonun kendi kamera uygulamasıyla MP4/MOV olarak çekilmiş bir video deneyin.", true));
+vid.addEventListener("seeked", () => { $("f-vkaydir").value = String(vid.currentTime); $("vzaman").textContent = fmt(vid.currentTime) + " s"; vCiz(); });
+vid.addEventListener("loadeddata", vCiz);
+$("f-vkaydir").addEventListener("input", e => git(parseFloat(e.target.value)));
+document.querySelectorAll("[data-adim]").forEach(b => b.addEventListener("click", () => { const fps = parseFloat($("f-fps").value) || 30; git(vid.currentTime + (+b.dataset.adim) / fps); }));
+document.querySelectorAll("[data-mod]").forEach(b => b.addEventListener("click", () => modSec(b.dataset.mod)));
+vt.addEventListener("click", e => {
+  const r = vt.getBoundingClientRect();
+  vNokta[vMod] = { x: (e.clientX - r.left) * vt.width / r.width, y: (e.clientY - r.top) * vt.height / r.height, t: vid.currentTime };
+  const sonraki = SIRA.find(m => !vNokta[m]);
+  vCiz(); vHesapla();
+  if (sonraki) modSec(sonraki); else vDurum("Tüm noktalar işaretlendi. Düzeltmek için bir düğme seçip yeniden dokunun.");
+});
+$("f-olcek").addEventListener("input", () => { vCiz(); vHesapla(); });
+$("f-vses").addEventListener("change", vHesapla);
+$("b-vsifirla").addEventListener("click", () => { vNokta = {}; vCiz(); vHesapla(); modSec("olcek1"); });
+$("b-vkaydet").addEventListener("click", () => {
+  if (!vSonuc) return;
+  vDogrulamalar.push({ ...vSonuc, top: $("f-top").value.trim() || "Adsız top", zemin: $("f-zemin").value.trim() || "Adsız zemin", zaman: new Date().toISOString() });
+  vDepola(); vListeyiCiz(); vDurum("Doğrulama kaydedildi. CSV kopyalarken tablonun sonuna eklenir.");
+});
+vListeyiCiz();
+
+
+ayarYukle();
+karsilastirmayiCiz();
+$("b-ornek").click();
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
