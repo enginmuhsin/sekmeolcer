@@ -9,6 +9,7 @@
 <link rel="icon" href="ikon-192.png">
 <link rel="apple-touch-icon" href="ikon-192.png">
 <script src="https://muhsinengin.com/ortak/ana-sayfa.js" defer></script>
+<link rel="stylesheet" href="https://muhsinengin.com/ortak/matematik.css">
 </head>
 <body>
 <title>SekmeÖlçer</title>
@@ -189,6 +190,15 @@ pre{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid
     </table></div>
     <p class="note">e = t₂/t₁ her ölçümde aynı sekmeden okunur; böylece her zemin aynı çarpma hızında karşılaştırılır. Yalnızca ilk üç tık kullanılır; sonraki sekmeler (özellikle yumuşak zeminde) düzensiz olabilir ve hesaba girmez. t₃/t₂ bilgi içindir. Aynı kayıttaki diğer bırakışlardan açıkça sapan bırakış (t₁ %10'dan, e 0,05'ten fazla) şüpheli sayılır ve kaydedilmez. e (yükseklik) = √(1. sekme yüksekliği ÷ bırakma yüksekliği).</p>
     <div class="row"><button id="b-ekle" class="primary" disabled>Geçerli bırakışları kaydet</button></div>
+    <details class="mat-kutu">
+      <summary><span class="mk-rozet" aria-hidden="true">∑</span><span class="mk-baslik">Bunun arkasındaki matematik</span><span class="mk-ipucu">Neden yükseklik ölçmeden yalnızca seslerden e bulunur?</span></summary>
+      <div class="mk-ic">
+        <p>Sekme katsayısı, topun yerden kalkış hızının çarpma hızına oranıdır: <i>e</i> = v<sub>sonra</sub> ÷ v<sub>önce</sub>. Top v hızıyla kalkarsa, yerçekimi onu durdurup geri getirene kadar havada t = 2v/g kalır. Uçuş süresi hızla <b>doğru orantılı</b> olduğu için hız oranı, süre oranına eşittir:</p>
+        <p class="mk-formul">e = v₂ / v₁ = t₂ / t₁ &nbsp;·&nbsp; h = g·t² / 8 &nbsp;·&nbsp; e = √(h₁ / H₀)</p>
+        <p>Böylece metreye, kameraya gerek kalmaz; iki “tık” arasındaki süreleri ölçmek yeter. Yükseklik ise sürenin <b>karesiyle</b> büyür (yarı sürede çıkılan yol g·(t/2)²/2), bu yüzden yükseklikten giderken karekök alınır. Her sekmede kalan enerji oranı e² kadardır: e = 0,8 ise top her sekmede enerjisinin yaklaşık %36'sını kaybeder.</p>
+        <p class="mk-benzetme"><b>Benzetme</b> Havaya dik attığın bir top ne kadar hızlı çıkarsa o kadar uzun süre havada kalır: iki kat hızlı atarsan iki kat uzun kalır, ama dört kat yükseğe çıkar. SekmeÖlçer de topun “havada kalma süresini” dinleyerek hızını tartar; tıpkı bir kronometreyle hız ölçmek gibi.</p>
+      </div>
+    </details>
   </section>
 
   <section aria-labelledby="h-karsi">
