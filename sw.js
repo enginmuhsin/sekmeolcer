@@ -1,6 +1,6 @@
 // SekmeÖlçer çevrimdışı önbelleği. Uygulamayı güncellediğinizde SURUM'u değiştirin.
-const SURUM = "sekmeolcer-1.2c";
-const DOSYALAR = ["./", "./index.html", "./manifest.json", "./ikon-192.png", "./ikon-512.png"];
+const SURUM = "sekmeolcer-1.3a";
+const DOSYALAR = ["./", "./index.html", "./manifest.json", "./bulut-ayar.js", "./ikon-192.png", "./ikon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(SURUM).then(c => c.addAll(DOSYALAR))); self.skipWaiting(); });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(adlar => Promise.all(adlar.filter(a => a !== SURUM).map(a => caches.delete(a)))));

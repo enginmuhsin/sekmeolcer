@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#e5622b">
+<meta name="robots" content="noindex,nofollow">
+<title>SekmeÖlçer · Öğretmen paneli</title>
+<link rel="icon" href="ikon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<script src="bulut-ayar.js"></script>
+<style>
+:root{
+  --bg:#f1f4f2; --panel:#ffffff; --ink:#17231e; --muted:#5b6b64; --line:#d3ddd8;
+  --accent:#e5622b; --accent-ink:#ffffff; --ok:#1d7f5a; --warn:#b5740d; --soft:#fbe7dc;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#111815; --panel:#18221e; --ink:#e6eee9; --muted:#9aaba3; --line:#2c3a34;
+  --accent:#f07a45; --accent-ink:#1a0f09; --ok:#4fc28f; --warn:#e3a845; --soft:#3a2418; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;margin:0}
+.wrap{max-width:980px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,6vw,36px);line-height:1;margin:0;letter-spacing:-.02em}
+h1 span{color:var(--accent)}
+.sub{color:var(--muted);margin:4px 0 0}
+a.geri{font-size:13px;font-weight:700;color:var(--accent);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px;min-width:0}
+h2{font-family:var(--display);font-weight:600;font-size:18px;margin:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+input,select{font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+button{font:inherit;font-weight:700;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:10px 14px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.kucuk{padding:4px 10px;font-size:13px}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.status{font-size:14px;color:var(--muted);min-height:1.5em;margin:0}
+.status.err{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border-radius:8px;padding:8px 10px}
+.note{font-size:13px;color:var(--muted);margin:0}
+.tablebox{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+td.num{font-family:var(--mono)}
+td .row{gap:6px;flex-wrap:nowrap}
+.kod{font-family:var(--mono);font-weight:600}
+.pill{font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;border:1px solid currentColor}
+.pill.ok{color:var(--ok)} .pill.warn{color:var(--warn)} .pill.bad{color:var(--accent)}
+.big{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-family:var(--mono);font-size:24px;font-weight:600}
+.stat small{color:var(--muted)}
+.yeni-pin{font-family:var(--mono);font-size:20px;font-weight:700;background:var(--soft);border-radius:8px;padding:8px 12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Sekme<span>Ölçer</span> · öğretmen paneli</h1>
+      <p class="sub">Öğrenci defterlerini yönetin, ölçümleri görün ve indirin.</p>
+    </div>
+    <a class="geri" href="./">Uygulamaya dön</a>
+  </header>
+
+  <section id="s-giris">
+    <h2>Yönetici girişi</h2>
+    <div class="fields">
+      <label for="f-sifre">Yönetici şifresi<input id="f-sifre" type="password" autocomplete="current-password"></label>
+      <div><button id="b-giris" class="primary">Giriş</button></div>
+    </div>
+    <p class="status" id="d-giris" role="status"></p>
+  </section>
+
+  <div id="panel" hidden style="display:grid;gap:18px">
+    <section>
+      <div class="row" style="justify-content:space-between"><h2>Öğrenciler</h2><span class="row"><button id="b-yenile" class="kucuk">Yenile</button><button id="b-cikis" class="kucuk">Çıkış</button></span></div>
+      <div class="big">
+        <div class="stat"><small>Öğrenci</small><b id="s-ogr">—</b></div>
+        <div class="stat"><small>Toplam bırakış</small><b id="s-bir">—</b></div>
+        <div class="stat"><small>Video doğrulama</small><b id="s-vid">—</b></div>
+      </div>
+      <div class="tablebox"><table>
+        <thead><tr><th>Kod</th><th>Not</th><th>Bırakış</th><th>Video</th><th>Son kayıt</th><th>Durum</th><th></th></tr></thead>
+        <tbody id="t-ogr"><tr><td colspan="7" class="note">Yükleniyor…</td></tr></tbody>
+      </table></div>
+      <p class="status" id="d-ogr" role="status"></p>
+      <div id="pin-goster" hidden class="row"><span class="note" id="pin-yazi"></span><span class="yeni-pin" id="pin-deger"></span></div>
+    </section>
+
+    <section>
+      <h2>Öğrenci ekle</h2>
+      <p class="note">Gerçek ad yazmayın: bir takma ad ya da kod verin (ör. ATMACA, GRUP1-A). PIN'i öğrenciye ayrıca söyleyin; PIN sunucuda şifrelenmiş saklanır, sonradan görülemez, yalnızca yenisi verilebilir.</p>
+      <div class="fields">
+        <label for="f-kod">Öğrenci kodu<input id="f-kod" autocapitalize="characters" spellcheck="false" maxlength="20" placeholder="ör. ATMACA"></label>
+        <label for="f-pin">PIN (4–8 rakam)<input id="f-pin" inputmode="numeric" maxlength="8"></label>
+        <label for="f-not">Not (isteğe bağlı)<input id="f-not" maxlength="80" placeholder="ör. Çınar Parkı ekibi"></label>
+      </div>
+      <div class="row"><button id="b-rastgele">Rastgele PIN</button><button id="b-ekle" class="primary">Öğrenciyi ekle</button></div>
+      <p class="status" id="d-ekle" role="status"></p>
+    </section>
+
+    <section>
+      <div class="row" style="justify-content:space-between"><h2>Ölçümler</h2>
+        <label for="f-filtre" style="min-width:180px">Gösterilen<select id="f-filtre"><option value="">Tüm öğrenciler</option></select></label></div>
+      <h3 class="note" style="font-weight:700">Öğrenci × top × zemin özeti</h3>
+      <div class="tablebox"><table>
+        <thead><tr><th>Öğrenci</th><th>Top</th><th>Zemin</th><th>n</th><th>Ortalama e</th><th>SS</th></tr></thead>
+        <tbody id="t-ozet"><tr><td colspan="6" class="note">—</td></tr></tbody>
+      </table></div>
+      <h3 class="note" style="font-weight:700">Bırakışlar tek tek</h3>
+      <div class="tablebox"><table>
+        <thead><tr><th>Öğrenci</th><th>Ölçüm zamanı</th><th>Top</th><th>Yer · zemin</th><th>Nokta</th><th>H₀ (m)</th><th>#</th><th>t₁</th><th>t₂</th><th>e</th><th></th></tr></thead>
+        <tbody id="t-kayit"><tr><td colspan="11" class="note">—</td></tr></tbody>
+      </table></div>
+      <h3 class="note" style="font-weight:700">Video doğrulamaları</h3>
+      <div class="tablebox"><table>
+        <thead><tr><th>Öğrenci</th><th>Zaman</th><th>Top</th><th>Zemin</th><th>h bırakma</th><th>h sekme</th><th>e (video)</th><th>e (ses)</th><th></th></tr></thead>
+        <tbody id="t-video"><tr><td colspan="9" class="note">—</td></tr></tbody>
+      </table></div>
+      <div class="row"><button id="b-csv" class="primary">CSV indir (gösterilenler)</button></div>
+      <p class="status" id="d-kayit" role="status"></p>
+    </section>
+
+    <section>
+      <h2>Yönetici şifresini değiştir</h2>
+      <div class="fields">
+        <label for="f-yeni">Yeni şifre (en az 8 karakter)<input id="f-yeni" type="password" autocomplete="new-password"></label>
+        <label for="f-yeni2">Yeni şifre (tekrar)<input id="f-yeni2" type="password" autocomplete="new-password"></label>
+        <div><button id="b-sifre">Şifreyi değiştir</button></div>
+      </div>
+      <p class="status" id="d-sifre" role="status"></p>
+    </section>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const BULUT = window.SEKME_BULUT || {};
+const fmt = (x, d = 3) => Number.isFinite(x) ? x.toFixed(d).replace(".", ",") : "—";
+const ort = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN;
+const ss = a => { if (a.length < 2) return NaN; const m = ort(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
+const tarih = t => t ? new Date(t).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
+const kodDuzelt = s => String(s || "").trim().toLocaleUpperCase("tr-TR").replace(/[ÇĞİÖŞÜ]/g, c => ({Ç:"C",Ğ:"G",İ:"I",Ö:"O",Ş:"S",Ü:"U"})[c]).replace(/\s+/g, "-");
+function yaz(id, m, hata = false) { const d = $(id); d.textContent = m; d.classList.toggle("err", hata); }
+function hucre(tr, v, num) { const td = document.createElement("td"); if (v instanceof Node) td.appendChild(v); else td.textContent = v ?? "—"; if (num) td.className = "num"; tr.appendChild(td); return td; }
+function pill(tip, metin) { const s = document.createElement("span"); s.className = "pill " + tip; s.textContent = metin; return s; }
+function dugme(metin, f, onayMetni) {
+  const b = document.createElement("button"); b.className = "kucuk"; b.textContent = metin;
+  b.addEventListener("click", () => { if (onayMetni && b.dataset.onay !== "1") { b.dataset.onay = "1"; b.textContent = onayMetni; return; } f(b); });
+  return b;
+}
+
+let sifre = sessionStorage.getItem("sekme-yon") || "", ogrenciler = [], kayitlar = [];
+async function yon(islem, veri = {}) {
+  const h = { "Content-Type": "application/json", apikey: BULUT.anahtar };
+  if (!String(BULUT.anahtar).startsWith("sb_")) h.Authorization = "Bearer " + BULUT.anahtar;
+  const c = await fetch(String(BULUT.url).replace(/\/+$/, "") + "/rest/v1/rpc/sekme_yonetici",
+    { method: "POST", headers: h, body: JSON.stringify({ p_sifre: sifre, p_islem: islem, p_veri: veri }), cache: "no-store" });
+  if (!c.ok) throw new Error("Sunucu yanıtı: " + c.status);
+  return c.json();
+}
+
+async function yukle() {
+  const [o, k] = await Promise.all([yon("ozet"), yon("kayitlar")]);
+  if (!o.ok) throw new Error(o.mesaj);
+  if (!k.ok) throw new Error(k.mesaj);
+  ogrenciler = o.ogrenciler; kayitlar = k.kayitlar;
+  ogrCiz(); filtreCiz(); kayitCiz();
+}
+
+function ogrCiz() {
+  const tb = $("t-ogr"); tb.innerHTML = "";
+  $("s-ogr").textContent = ogrenciler.length;
+  $("s-bir").textContent = ogrenciler.reduce((s, o) => s + o.birakis, 0);
+  $("s-vid").textContent = ogrenciler.reduce((s, o) => s + o.video, 0);
+  for (const o of ogrenciler) {
+    const tr = document.createElement("tr");
+    const k = document.createElement("span"); k.className = "kod"; k.textContent = o.kod; hucre(tr, k);
+    hucre(tr, o.aciklama || "—"); hucre(tr, String(o.birakis), true); hucre(tr, String(o.video), true); hucre(tr, tarih(o.son_kayit));
+    hucre(tr, !o.aktif ? pill("bad", "durduruldu") : o.kilitli ? pill("warn", "kilitli (hatalı PIN)") : pill("ok", "aktif"));
+    const r = document.createElement("div"); r.className = "row";
+    r.append(
+      dugme("Göster", () => { $("f-filtre").value = o.kod; kayitCiz(); $("t-ozet").scrollIntoView({ behavior: "smooth", block: "center" }); }),
+      dugme("Yeni PIN", async () => {
+        const pin = rastgelePin();
+        const s = await islem("pin_degistir", { kod: o.kod, pin }, "d-ogr");
+        if (s) pinGoster(`${o.kod} için yeni PIN:`, pin);
+      }, "Emin misiniz?"),
+      dugme(o.aktif ? "Durdur" : "Aç", async () => { if (await islem("aktiflik", { kod: o.kod, aktif: !o.aktif }, "d-ogr")) yaz("d-ogr", `${o.kod} ${o.aktif ? "durduruldu" : "yeniden açıldı"}.`); }),
+      dugme("Sil", async () => { if (await islem("ogrenci_sil", { kod: o.kod }, "d-ogr")) yaz("d-ogr", `${o.kod} ve tüm kayıtları silindi.`); }, "Tüm kayıtlarıyla silinsin mi?")
+    );
+    hucre(tr, r); tb.appendChild(tr);
+  }
+  if (!ogrenciler.length) tb.innerHTML = '<tr><td colspan="7" class="note">Henüz öğrenci yok. Aşağıdan ekleyin.</td></tr>';
+}
+function filtreCiz() {
+  const sel = $("f-filtre"), once = sel.value; sel.innerHTML = '<option value="">Tüm öğrenciler</option>';
+  for (const o of ogrenciler) { const op = document.createElement("option"); op.value = o.kod; op.textContent = `${o.kod} (${o.birakis})`; sel.appendChild(op); }
+  if (ogrenciler.some(o => o.kod === once)) sel.value = once;
+}
+const gosterilen = () => { const f = $("f-filtre").value; return kayitlar.filter(k => !f || k.kod === f); };
+function kayitCiz() {
+  const l = gosterilen(), bir = l.filter(k => k.tip === "birakis"), vid = l.filter(k => k.tip === "video");
+  const gr = new Map();
+  for (const k of bir) { const a = [k.kod, k.veri.top, k.veri.zemin].join("\u0000"); if (!gr.has(a)) gr.set(a, { kod: k.kod, top: k.veri.top, zemin: k.veri.zemin, ref: false, e: [] }); const g = gr.get(a); g.e.push(+k.veri.e); if (k.veri.ref) g.ref = true; }
+  const to = $("t-ozet"); to.innerHTML = "";
+  [...gr.values()].sort((a, b) => a.kod.localeCompare(b.kod, "tr") || String(a.top).localeCompare(String(b.top), "tr") || ort(b.e) - ort(a.e)).forEach(g => {
+    const tr = document.createElement("tr"); hucre(tr, g.kod); hucre(tr, g.top);
+    const z = document.createElement("span"); z.textContent = (g.zemin || "—") + " "; if (g.ref) z.appendChild(pill("ok", "referans")); hucre(tr, z);
+    hucre(tr, String(g.e.length), true); hucre(tr, fmt(ort(g.e)), true); hucre(tr, fmt(ss(g.e)), true); to.appendChild(tr);
+  });
+  if (!gr.size) to.innerHTML = '<tr><td colspan="6" class="note">Bu seçimde bırakış yok.</td></tr>';
+  const tk = $("t-kayit"); tk.innerHTML = "";
+  for (const k of bir) {
+    const v = k.veri, tr = document.createElement("tr");
+    hucre(tr, k.kod); hucre(tr, tarih(v.zaman)); hucre(tr, v.top); hucre(tr, (v.yer ? v.yer + " · " : "") + (v.zemin || "") + (v.ref ? " (ref)" : "")); hucre(tr, v.nokta || "—");
+    hucre(tr, fmt(+v.yukseklik, 2), true); hucre(tr, String(v.birakis ?? "—"), true); hucre(tr, fmt(+v.t1), true); hucre(tr, fmt(+v.t2), true); hucre(tr, fmt(+v.e), true);
+    hucre(tr, dugme("Sil", () => kayitSil(k), "Emin misiniz?")); tk.appendChild(tr);
+  }
+  if (!bir.length) tk.innerHTML = '<tr><td colspan="11" class="note">Bu seçimde bırakış yok.</td></tr>';
+  const tv = $("t-video"); tv.innerHTML = "";
+  for (const k of vid) {
+    const v = k.veri, tr = document.createElement("tr");
+    hucre(tr, k.kod); hucre(tr, tarih(v.zaman)); hucre(tr, v.top); hucre(tr, v.zemin); hucre(tr, fmt(+v.hB), true); hucre(tr, fmt(+v.hT), true); hucre(tr, fmt(+v.eV), true); hucre(tr, v.eS == null ? "—" : fmt(+v.eS), true);
+    hucre(tr, dugme("Sil", () => kayitSil(k), "Emin misiniz?")); tv.appendChild(tr);
+  }
+  if (!vid.length) tv.innerHTML = '<tr><td colspan="9" class="note">Bu seçimde video doğrulaması yok.</td></tr>';
+}
+async function kayitSil(k) { if (await islem("kayit_sil", { sid: k.sid }, "d-kayit")) yaz("d-kayit", "Kayıt silindi."); }
+async function islem(ad, veri, durumId) {
+  try {
+    const r = await yon(ad, veri);
+    if (!r.ok) { yaz(durumId, r.mesaj || "İşlem yapılamadı.", true); return false; }
+    await yukle(); return r;
+  } catch (e) { yaz(durumId, "Sunucuya ulaşılamadı: " + e.message, true); return false; }
+}
+function rastgelePin() { const a = new Uint32Array(1); crypto.getRandomValues(a); return String(a[0] % 10000).padStart(4, "0"); }
+function pinGoster(m, pin) { $("pin-goster").hidden = false; $("pin-yazi").textContent = m + " "; $("pin-deger").textContent = pin; yaz("d-ogr", "Bu PIN'i öğrenciye söyleyin; sayfa yenilenince bir daha gösterilmez."); }
+
+$("b-giris").addEventListener("click", async () => {
+  sifre = $("f-sifre").value; if (!sifre) return;
+  yaz("d-giris", "Giriş yapılıyor…");
+  try { await yukle(); sessionStorage.setItem("sekme-yon", sifre); $("f-sifre").value = ""; $("s-giris").hidden = true; $("panel").hidden = false; }
+  catch (e) { sifre = ""; yaz("d-giris", e.message.startsWith("Sunucu") || e.message.includes("fetch") ? "Sunucuya ulaşılamadı. İnterneti ve bulut-ayar.js ayarını kontrol edin." : e.message, true); }
+});
+$("f-sifre").addEventListener("keydown", e => { if (e.key === "Enter") $("b-giris").click(); });
+$("b-cikis").addEventListener("click", () => { sessionStorage.removeItem("sekme-yon"); sifre = ""; location.reload(); });
+$("b-yenile").addEventListener("click", async () => { try { await yukle(); yaz("d-ogr", "Güncellendi: " + tarih(new Date())); } catch (e) { yaz("d-ogr", e.message, true); } });
+$("b-rastgele").addEventListener("click", () => { $("f-pin").value = rastgelePin(); });
+$("b-ekle").addEventListener("click", async () => {
+  const kod = kodDuzelt($("f-kod").value), pin = $("f-pin").value.trim();
+  if (!/^[A-Z0-9-]{3,20}$/.test(kod)) { yaz("d-ekle", "Kod 3–20 karakter olmalı: harf, rakam ya da tire.", true); return; }
+  if (!/^\d{4,8}$/.test(pin)) { yaz("d-ekle", "PIN 4–8 rakam olmalı. «Rastgele PIN» düğmesini kullanabilirsiniz.", true); return; }
+  if (await islem("ogrenci_ekle", { kod, pin, aciklama: $("f-not").value.trim() }, "d-ekle")) {
+    yaz("d-ekle", `${kod} eklendi.`); pinGoster(`${kod} için PIN:`, pin);
+    $("f-kod").value = ""; $("f-pin").value = ""; $("f-not").value = "";
+  }
+});
+$("f-filtre").addEventListener("change", kayitCiz);
+$("b-csv").addEventListener("click", () => {
+  const l = gosterilen(); if (!l.length) { yaz("d-kayit", "İndirilecek kayıt yok.", true); return; }
+  const alanlar = ["kayit","yer","top","kutle_g","cap_cm","tur","zemin","ref","nokta","sicaklik","yukseklik","lat","lon","birakis","tik","t1","t2","t3","e","e2","eH","zaman"];
+  const y = v => typeof v === "number" ? (Number.isFinite(v) ? String(+v.toFixed(6)) : "") : v == null ? "" : `"${String(v).replace(/"/g, '""')}"`;
+  let metin = "﻿" + ["ogrenci", ...alanlar, "sunucuya_gelis"].join(",") + "\n" +
+    l.filter(k => k.tip === "birakis").map(k => [y(k.kod), ...alanlar.map(a => y(k.veri[a])), y(k.alindi)].join(",")).join("\n");
+  const vid = l.filter(k => k.tip === "video");
+  if (vid.length) metin += "\n\nvideo_dogrulama\nogrenci,top,zemin,h_birakma_m,h_sekme_m,e_video,e_ses,zaman\n" +
+    vid.map(k => [k.kod, k.veri.top, k.veri.zemin, k.veri.hB, k.veri.hT, k.veri.eV, k.veri.eS, k.veri.zaman].map(y).join(",")).join("\n");
+  const ad = `sekmeolcer_${$("f-filtre").value || "tum"}_${new Date().toISOString().slice(0, 10)}.csv`;
+  const url = URL.createObjectURL(new Blob([metin], { type: "text/csv" })), a = document.createElement("a");
+  a.href = url; a.download = ad; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 15000);
+  yaz("d-kayit", `${ad} indirildi.`);
+});
+$("b-sifre").addEventListener("click", async () => {
+  const y1 = $("f-yeni").value, y2 = $("f-yeni2").value;
+  if (y1.length < 8) { yaz("d-sifre", "Yeni şifre en az 8 karakter olmalı.", true); return; }
+  if (y1 !== y2) { yaz("d-sifre", "İki şifre aynı değil.", true); return; }
+  try {
+    const r = await yon("sifre_degistir", { yeni: y1 });
+    if (!r.ok) { yaz("d-sifre", r.mesaj, true); return; }
+    sifre = y1; sessionStorage.setItem("sekme-yon", y1); $("f-yeni").value = $("f-yeni2").value = ""; yaz("d-sifre", "Şifre değiştirildi.");
+  } catch (e) { yaz("d-sifre", "Sunucuya ulaşılamadı.", true); }
+});
+
+if (!BULUT.url || !BULUT.anahtar) {
+  yaz("d-giris", "Bulut bağlantısı henüz ayarlanmamış: bulut-ayar.js dosyasına Supabase adresini ve anahtarını yazın.", true);
+  $("b-giris").disabled = true;
+} else if (sifre) {
+  yukle().then(() => { $("s-giris").hidden = true; $("panel").hidden = false; }).catch(() => { sifre = ""; sessionStorage.removeItem("sekme-yon"); });
+}
+</script>
+</body>
+</html>
