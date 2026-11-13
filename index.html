@@ -10,6 +10,7 @@
 <link rel="apple-touch-icon" href="ikon-192.png">
 <script src="https://muhsinengin.com/ortak/ana-sayfa.js" defer></script>
 <script src="https://muhsinengin.com/ortak/sayac.js" defer></script>
+<script src="bulut-ayar.js"></script>
 <link rel="stylesheet" href="https://muhsinengin.com/ortak/matematik.css">
 </head>
 <body>
@@ -104,6 +105,10 @@ td.num{font-family:var(--mono)}
 .modlar button{font-size:14px;padding:8px 10px}
 .modlar button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
 .modlar button .ok{color:var(--ok);font-weight:700}
+.ogr-kutu{display:grid;gap:10px}
+.ogr-kimlik{display:flex;align-items:center;gap:10px;margin:0;font-size:16px}
+.ogr-rozet{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--soft);color:var(--accent);font-weight:700}
+#ogr-bolum.acik{border-color:var(--accent)}
 pre{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;margin:0;max-height:160px}
 </style>
 
@@ -113,9 +118,35 @@ pre{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid
       <h1>Sekme<span>Ölçer</span></h1>
       <p class="sub">Topun çarpma seslerinden sekme katsayısını (e = t₂ / t₁) hesaplar. Tek kayıtta arka arkaya birden çok bırakış yapabilirsiniz; uygulama her bırakışı ayrı bulur.</p>
     </div>
-    <span class="ust-sag"><ana-sayfa-dugmesi><a href="https://muhsinengin.com/">Ana sayfa</a></ana-sayfa-dugmesi><span class="tag">v1.2</span></span>
+    <span class="ust-sag"><ana-sayfa-dugmesi><a href="https://muhsinengin.com/">Ana sayfa</a></ana-sayfa-dugmesi><span class="tag">v1.3</span></span>
   </header>
   <p class="ortam" id="ortam" hidden></p>
+
+  <section id="ogr-bolum" aria-labelledby="h-ogr" hidden>
+    <h2 id="h-ogr">Öğrenci defteri</h2>
+    <div id="ogr-giris" class="ogr-kutu">
+      <p class="note">Öğretmeninin verdiği kod ve PIN ile gir. Kaydettiğin bırakışlar hem bu telefonda kalır hem de senin defterine gönderilir. İnternet yoksa sorun değil: bağlantı gelince kendiliğinden gider.</p>
+      <div class="fields">
+        <label for="f-ogrkod">Öğrenci kodu<input id="f-ogrkod" autocomplete="username" autocapitalize="characters" spellcheck="false" placeholder="ör. ATMACA"></label>
+        <label for="f-ogrpin">PIN<input id="f-ogrpin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8"></label>
+      </div>
+      <div class="row"><button id="b-ogrgir" class="primary">Deftere gir</button></div>
+    </div>
+    <div id="ogr-ic" class="ogr-kutu" hidden>
+      <p class="ogr-kimlik"><span class="ogr-rozet" aria-hidden="true">✎</span><span><b id="ogr-ad"></b> defteri açık</span></p>
+      <div class="big">
+        <div class="stat"><small>Defterde (bulutta)</small><b id="ogr-bulut">—</b></div>
+        <div class="stat"><small>Gönderilmeyi bekleyen</small><b id="ogr-bekleyen">0</b></div>
+      </div>
+      <div class="row">
+        <button id="b-ogrgonder">Şimdi gönder</button>
+        <button id="b-ogrgetir">Defterimdeki kayıtları bu telefona getir</button>
+        <button id="b-ogrcik">Çıkış</button>
+      </div>
+      <div class="row" id="ogr-sahipsiz" hidden><button id="b-ogrsahiplen"></button></div>
+    </div>
+    <p class="status" id="ogrdurum" role="status"></p>
+  </section>
 
   <section aria-labelledby="h-olcum">
     <h2 id="h-olcum">1 · Top ve zemin</h2>
@@ -239,7 +270,7 @@ pre{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid
     </div>
     <p class="status" id="vdurum2" role="status"></p>
     <pre id="csv" hidden></pre>
-    <p class="note">Kayıtlar yalnızca bu cihazda, bu tarayıcıda saklanır. Tarayıcı verilerini temizlemek kayıtları da siler; her ölçüm gününün sonunda "Yedek al" ile bir yedek dosyası saklayın. CSV dosyası Excel ve Google E-Tablolar'da açılır.</p>
+    <p class="note">Kayıtlar bu cihazda, bu tarayıcıda saklanır (öğrenci defterine girdiysen ayrıca defterine de gönderilir; defterdeki kayıtları yalnızca öğretmen silebilir). Tarayıcı verilerini temizlemek kayıtları da siler; her ölçüm gününün sonunda "Yedek al" ile bir yedek dosyası saklayın. CSV dosyası Excel ve Google E-Tablolar'da açılır.</p>
   </section>
 
   <section aria-labelledby="h-video">
@@ -292,7 +323,7 @@ pre{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid
 
 <script>
 "use strict";
-const g = 9.81, AYRIM_SN = 1.5, SURUM = "1.2";
+const g = 9.81, AYRIM_SN = 1.5, SURUM = "1.3";
 const $ = id => document.getElementById(id);
 const fmt = (x, d=3) => Number.isFinite(x) ? x.toFixed(d).replace(".", ",") : "—";
 const ort = a => a.length ? a.reduce((s,x)=>s+x,0)/a.length : NaN;
@@ -651,6 +682,7 @@ function kayitListesiCiz() {
     hucre(tr, btn); tb.appendChild(tr);
   }
   if (!gruplar.size) tb.innerHTML = '<tr><td colspan="7" class="note">Kayıt yok.</td></tr>';
+  dene(ogrCiz);
 }
 function zyoHesapla(eZemin, eRef) {
   const e = ort(eZemin), eR = ort(eRef), br = (e / eR) ** 2;
@@ -740,14 +772,16 @@ $("b-ekle").addEventListener("click", () => {
   const ortak = { kayit: kayitNo, yer: $("f-yer").value.trim(), top: ad, kutle_g: kutle, cap_cm: cap, tur: t.tur || "",
     zemin: $("f-zemin").value.trim() || "Adsız zemin", ref: $("f-ref").checked, nokta: $("f-nokta").value.trim(), sicaklik: sayi("f-sicaklik"),
     yukseklik: sayi("f-yukseklik"), lat: konum ? konum.lat : null, lon: konum ? konum.lon : null, zaman: new Date().toISOString() };
+  if (ogr) ortak.ogr = ogr.kod;
   sonBirakislar.forEach((b, i) => { if (b.durum !== "ok") return; kayitlar.push({ ...ortak, birakis: i+1, tik: b.tik, t1: b.t1, t2: b.t2, t3: b.t3 ?? null, e: b.e, e2: Number.isFinite(b.e2) ? b.e2 : null, eH: b.eH }); });
   depola(); karsilastirmayiCiz(); btn.disabled = true; btn.textContent = "Geçerli bırakışları kaydet"; delete btn.dataset.yine;
-  durum(`${gecerli.length} bırakış kaydedildi (${ad} · ${ortak.zemin}). Sıradaki kayda geçebilirsiniz.`);
+  durum(`${gecerli.length} bırakış kaydedildi (${ad} · ${ortak.zemin})${ogr ? ", " + ogr.kod + " defterine gönderiliyor" : ""}. Sıradaki kayda geçebilirsiniz.`);
+  bulutaGonder();
 });
 
 /* ---------- VERİYİ DIŞARI AL ---------- */
 function csv() {
-  const alanlar = ["kayit","yer","top","kutle_g","cap_cm","tur","zemin","ref","nokta","sicaklik","yukseklik","lat","lon","birakis","tik","t1","t2","t3","e","e2","eH","zaman"];
+  const alanlar = ["ogr","kayit","yer","top","kutle_g","cap_cm","tur","zemin","ref","nokta","sicaklik","yukseklik","lat","lon","birakis","tik","t1","t2","t3","e","e2","eH","zaman"];
   const yaz = v => typeof v === "number" ? (Number.isFinite(v) ? String(+v.toFixed(6)) : "") : v == null ? "" : `"${String(v).replace(/"/g,'""')}"`;
   return [alanlar.join(","), ...kayitlar.map(k => alanlar.map(a => yaz(k[a])).join(","))].join("\n");
 }
@@ -903,7 +937,7 @@ function vListeyiCiz() {
 function videoCsv() {
   if (!vDogrulamalar.length) return "";
   const s = v => typeof v === "number" ? String(+v.toFixed(5)) : `"${String(v ?? "").replace(/"/g,'""')}"`;
-  return "\n\nvideo_dogrulama\ntop,zemin,h_birakma_m,h_sekme_m,e_video,e_ses,zaman\n" + vDogrulamalar.map(d => [d.top, d.zemin, d.hB, d.hT, d.eV, d.eS ?? "", d.zaman].map(s).join(",")).join("\n");
+  return "\n\nvideo_dogrulama\nogr,top,zemin,h_birakma_m,h_sekme_m,e_video,e_ses,zaman\n" + vDogrulamalar.map(d => [d.ogr ?? "", d.top, d.zemin, d.hB, d.hT, d.eV, d.eS ?? "", d.zaman].map(s).join(",")).join("\n");
 }
 function git(t) { if (!vid.duration) return; vid.currentTime = Math.max(0, Math.min(vid.duration - 0.001, t)); }
 $("f-video").addEventListener("change", ev => {
@@ -934,11 +968,137 @@ $("f-vses").addEventListener("change", vHesapla);
 $("b-vsifirla").addEventListener("click", () => { vNokta = {}; vCiz(); vHesapla(); modSec("olcek1"); });
 $("b-vkaydet").addEventListener("click", () => {
   if (!vSonuc) return;
-  vDogrulamalar.push({ ...vSonuc, top: $("f-top").value.trim() || "Adsız top", zemin: $("f-zemin").value.trim() || "Adsız zemin", zaman: new Date().toISOString() });
-  vDepola(); vListeyiCiz(); vDurum("Doğrulama kaydedildi. CSV kopyalarken tablonun sonuna eklenir.");
+  vDogrulamalar.push({ ...vSonuc, top: $("f-top").value.trim() || "Adsız top", zemin: $("f-zemin").value.trim() || "Adsız zemin", zaman: new Date().toISOString(), ...(ogr ? { ogr: ogr.kod } : {}) });
+  vDepola(); vListeyiCiz(); bulutaGonder(); vDurum("Doğrulama kaydedildi. CSV kopyalarken tablonun sonuna eklenir.");
 });
 vListeyiCiz();
 
+/* ---------- ÖĞRENCİ DEFTERİ (BULUT) ---------- */
+// Kayıtlar önce bu telefona yazılır; öğrenci girişliyse bir kuyruktan buluta gönderilir.
+// Bağlantı yoksa kuyruk bekler, internet gelince (ya da sayfa yeniden açılınca) kendiliğinden gider.
+const BULUT = window.SEKME_BULUT || {}, BULUT_VAR = !!(BULUT.url && BULUT.anahtar && !CLAUDE_ICINDE);
+const OGRDEPO = "sekmeolcer-ogrenci", GIDENDEPO = "sekmeolcer-gonderilen";
+let ogr = BULUT_VAR ? dene(() => JSON.parse(localStorage.getItem(OGRDEPO) || "null")) : null;
+let gonderilen = new Set(dene(() => JSON.parse(localStorage.getItem(GIDENDEPO) || "[]")) || []);
+let buluttaSayi = null, gonderiyor = false, yeniden = false;
+const gidenDepola = () => dene(() => localStorage.setItem(GIDENDEPO, JSON.stringify([...gonderilen])));
+const birakisId = k => "b|" + k.zaman + "|" + k.birakis + "|" + k.top;
+const videoId = d => "v|" + d.zaman;
+const gidenAnahtar = (kod, id) => kod + "\u001f" + id;
+function ogrDurum(m, hata=false) { const d = $("ogrdurum"); d.textContent = m; d.classList.toggle("err", hata); }
+const kodDuzelt = s => String(s || "").trim().toLocaleUpperCase("tr-TR").replace(/[ÇĞİÖŞÜ]/g, c => ({Ç:"C",Ğ:"G",İ:"I",Ö:"O",Ş:"S",Ü:"U"})[c]).replace(/\s+/g, "-");
+
+async function rpc(ad, govde) {
+  const h = { "Content-Type": "application/json", apikey: BULUT.anahtar };
+  if (!String(BULUT.anahtar).startsWith("sb_")) h.Authorization = "Bearer " + BULUT.anahtar;
+  const c = await fetch(String(BULUT.url).replace(/\/+$/, "") + "/rest/v1/rpc/" + ad, { method: "POST", headers: h, body: JSON.stringify(govde), cache: "no-store" });
+  if (!c.ok) throw new Error("sunucu " + c.status);
+  return c.json();
+}
+function bekleyenler() {
+  if (!ogr) return [];
+  const l = [];
+  for (const k of kayitlar) if (k.ogr === ogr.kod && !gonderilen.has(gidenAnahtar(ogr.kod, birakisId(k)))) l.push({ id: birakisId(k), tip: "birakis", veri: k });
+  for (const d of vDogrulamalar) if (d.ogr === ogr.kod && !gonderilen.has(gidenAnahtar(ogr.kod, videoId(d)))) l.push({ id: videoId(d), tip: "video", veri: d });
+  return l;
+}
+const sahipsizler = () => kayitlar.filter(k => !k.ogr).length + vDogrulamalar.filter(d => !d.ogr).length;
+function ogrCiz() {
+  $("ogr-bolum").hidden = !BULUT_VAR; if (!BULUT_VAR) return;
+  $("ogr-bolum").classList.toggle("acik", !!ogr);
+  $("ogr-giris").hidden = !!ogr; $("ogr-ic").hidden = !ogr;
+  if (!ogr) return;
+  $("ogr-ad").textContent = ogr.kod;
+  $("ogr-bulut").textContent = buluttaSayi == null ? "—" : String(buluttaSayi);
+  $("ogr-bekleyen").textContent = String(bekleyenler().length);
+  const n = sahipsizler(), b = $("b-ogrsahiplen");
+  $("ogr-sahipsiz").hidden = !n; b.textContent = `Bu telefondaki girişsiz ${n} kaydı da ${ogr.kod} defterine ekle`; delete b.dataset.onay;
+}
+async function bulutaGonder(sessiz = false) {
+  if (!ogr) return;
+  if (gonderiyor) { yeniden = true; return; }
+  const liste = bekleyenler(); ogrCiz();
+  if (!liste.length) { if (!sessiz) ogrDurum("Gönderilecek yeni kayıt yok; defterin güncel."); return; }
+  if (!navigator.onLine) { ogrDurum(`İnternet yok: ${liste.length} kayıt bu telefonda bekliyor, bağlantı gelince gönderilecek.`); return; }
+  gonderiyor = true; ogrDurum(`${liste.length} kayıt deftere gönderiliyor…`);
+  let eklenen = 0;
+  try {
+    for (let i = 0; i < liste.length; i += 200) {
+      const r = await rpc("sekme_gonder", { p_kod: ogr.kod, p_pin: ogr.pin, p_kayitlar: liste.slice(i, i + 200) });
+      if (!r.ok) {
+        ogrDurum("Gönderilemedi: " + (r.mesaj || r.hata) + (r.hata === "hatali" || r.hata === "yok" ? " Çıkış yapıp yeniden gir." : ""), true);
+        return;
+      }
+      (r.alinan || []).forEach(id => gonderilen.add(gidenAnahtar(ogr.kod, id))); gidenDepola();
+      eklenen += r.eklenen || 0;
+    }
+    if (buluttaSayi != null) buluttaSayi += eklenen;
+    ogrDurum(`Tamam: ${liste.length} kayıt ${ogr.kod} defterinde. (${new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })})`);
+  } catch (e) {
+    ogrDurum(`Şu an gönderilemedi (${navigator.onLine ? "sunucuya ulaşılamadı" : "internet yok"}). Kayıtlar güvende, bu telefonda bekliyor; daha sonra tekrar denenecek.`, true);
+  } finally {
+    gonderiyor = false; ogrCiz();
+    if (yeniden) { yeniden = false; bulutaGonder(true); }
+  }
+}
+$("b-ogrgir").addEventListener("click", async () => {
+  const kod = kodDuzelt($("f-ogrkod").value), pin = $("f-ogrpin").value.trim();
+  if (kod.length < 3 || !/^\d{4,8}$/.test(pin)) { ogrDurum("Kodu ve 4–8 haneli PIN'i yaz.", true); return; }
+  ogrDurum("Giriş yapılıyor…");
+  try {
+    const r = await rpc("sekme_giris", { p_kod: kod, p_pin: pin });
+    if (!r.ok) { ogrDurum(r.mesaj || "Giriş yapılamadı.", true); return; }
+    ogr = { kod: r.kod, pin }; dene(() => localStorage.setItem(OGRDEPO, JSON.stringify(ogr)));
+    buluttaSayi = (r.birakis || 0) + (r.video || 0); $("f-ogrpin").value = "";
+    ogrDurum(`Hoş geldin ${r.kod}. Bundan sonra kaydettiğin bırakışlar defterine de gidecek.`); ogrCiz(); bulutaGonder(true);
+  } catch (e) { ogrDurum("Sunucuya ulaşılamadı. İnternet bağlantını kontrol edip tekrar dene.", true); }
+});
+$("f-ogrpin").addEventListener("keydown", e => { if (e.key === "Enter") $("b-ogrgir").click(); });
+$("b-ogrgonder").addEventListener("click", () => bulutaGonder());
+$("b-ogrcik").addEventListener("click", () => {
+  const b = $("b-ogrcik"), n = bekleyenler().length;
+  if (n && b.dataset.onay !== "1") { b.dataset.onay = "1"; b.textContent = "Yine de çık"; ogrDurum(`${n} kayıt henüz gönderilmedi. Çıkarsan bu kayıtlar telefonda kalır, tekrar girdiğinde gönderilir.`, true); return; }
+  ogr = null; buluttaSayi = null; dene(() => localStorage.removeItem(OGRDEPO));
+  b.textContent = "Çıkış"; delete b.dataset.onay; ogrDurum("Defterden çıkıldı. Bu telefonda yapılan ölçümler artık yalnızca burada saklanır."); ogrCiz();
+});
+$("b-ogrsahiplen").addEventListener("click", () => {
+  const b = $("b-ogrsahiplen");
+  if (b.dataset.onay !== "1") { b.dataset.onay = "1"; b.textContent = "Emin misin? Bu kayıtları sen mi ölçtün? Evet, ekle"; return; }
+  kayitlar.forEach(k => { if (!k.ogr) k.ogr = ogr.kod; }); vDogrulamalar.forEach(d => { if (!d.ogr) d.ogr = ogr.kod; });
+  depola(); vDepola(); bulutaGonder();
+});
+$("b-ogrgetir").addEventListener("click", async () => {
+  if (!ogr) return; ogrDurum("Defterin getiriliyor…");
+  try {
+    const r = await rpc("sekme_kayitlarim", { p_kod: ogr.kod, p_pin: ogr.pin });
+    if (!r.ok) { ogrDurum(r.mesaj || "Getirilemedi.", true); return; }
+    const varB = new Set(kayitlar.map(birakisId)), varV = new Set(vDogrulamalar.map(videoId)), esle = new Map(); let eklenen = 0;
+    for (const x of r.kayitlar || []) {
+      gonderilen.add(gidenAnahtar(ogr.kod, x.id));
+      if (x.tip === "video") { if (!varV.has(x.id)) { vDogrulamalar.push(x.veri); varV.add(x.id); eklenen++; } continue; }
+      if (varB.has(x.id)) continue;
+      const anahtar = x.veri.zaman + "|" + x.veri.kayit;
+      if (!esle.has(anahtar)) esle.set(anahtar, ++kayitNo);
+      kayitlar.push({ ...x.veri, kayit: esle.get(anahtar) }); varB.add(x.id); eklenen++;
+    }
+    buluttaSayi = (r.kayitlar || []).length;
+    gidenDepola(); depola(); vDepola(); vListeyiCiz(); karsilastirmayiCiz(); ogrCiz();
+    ogrDurum(eklenen ? `Defterinden ${eklenen} kayıt bu telefona eklendi.` : "Defterindeki her kayıt zaten bu telefonda var.");
+  } catch (e) { ogrDurum("Sunucuya ulaşılamadı. İnternet bağlantını kontrol et.", true); }
+});
+if (BULUT_VAR) {
+  window.addEventListener("online", () => bulutaGonder(true));
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") bulutaGonder(true); });
+  setInterval(() => { if (bekleyenler().length) bulutaGonder(true); }, 60000);
+  ogrCiz();
+  if (ogr) {
+    rpc("sekme_giris", { p_kod: ogr.kod, p_pin: ogr.pin }).then(r => {
+      if (r.ok) { buluttaSayi = (r.birakis || 0) + (r.video || 0); ogrCiz(); bulutaGonder(true); }
+      else if (r.hata === "hatali" || r.hata === "yok") ogrDurum((r.mesaj || "") + " Öğretmenin PIN'i değiştirmiş olabilir: çıkış yapıp yeniden gir.", true);
+      else ogrDurum(r.mesaj || "", true);
+    }).catch(() => ogrDurum(`Çevrimdışı: kayıtlar bu telefonda birikiyor (${bekleyenler().length} bekleyen).`));
+  }
+}
 
 ayarYukle();
 karsilastirmayiCiz();
