@@ -4,6 +4,12 @@
 Öğretmen `yonetim.html` sayfasından yönetici şifresiyle bütün defterleri görür.
 Hiçbir kişisel veri (ad, e-posta, telefon) tutulmaz.
 
+## Mevcut durum (13 Kasım 2026)
+
+Kurulum **masterclassgeo** Supabase projesine yapıldı (sitenin diğer tablolarıyla aynı veritabanı;
+tablolar `sekme_` önekiyle ayrı duruyor, başka hiçbir tabloya dokunulmadı). `bulut-ayar.js` dolduruldu.
+Aşağıdaki adımlar, sıfırdan başka bir projeye kurmak gerekirse diye duruyor.
+
 ## Bir kerelik kurulum (telefondan yapılabilir)
 
 1. **Supabase projesi aç.** supabase.com → giriş → *New project*.

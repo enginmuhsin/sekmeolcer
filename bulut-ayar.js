@@ -4,6 +4,6 @@
 //   anahtar = anon / publishable key  (herkese açık olması güvenlidir; tablolar kilitli)
 // İkisi de boşsa öğrenci defteri bölümü görünmez, uygulama eskisi gibi çalışır.
 window.SEKME_BULUT = {
-  url: "",
-  anahtar: ""
+  url: "https://kfpziysmsajqidkzaawh.supabase.co",
+  anahtar: "sb_publishable_jzoa489kAPGEComqCF2JSQ_N8gjKPjC"
 };
